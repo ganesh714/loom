@@ -38,7 +38,13 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
 
   const processImportData = (content: string): any[] | null => {
     try {
-      const parsedData = JSON.parse(content);
+      let parsedData = JSON.parse(content);
+      
+      // Support object wrapper like { version: "1.0", nodes: [...] } from VS Code Extension
+      if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData) && Array.isArray(parsedData.nodes)) {
+        parsedData = parsedData.nodes;
+      }
+
       if (!Array.isArray(parsedData)) {
         setErrorMsg('Invalid format: The diagram data must be a JSON array of nodes.');
         return null;
@@ -168,7 +174,11 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
     }
 
     try {
-      const parsedData = JSON.parse(text);
+      let parsedData = JSON.parse(text);
+      if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData) && Array.isArray(parsedData.nodes)) {
+        parsedData = parsedData.nodes;
+      }
+
       if (Array.isArray(parsedData)) {
         setSuccessMsg('Valid JSON AST array! Ready to import.');
       } else {
