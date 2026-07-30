@@ -62,10 +62,12 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
           setErrorMsg('Invalid format: Each node must have a string "id" and "type".');
           return null;
         }
-        if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
-          if (node.type !== 'arrow' && node.type !== 'line' && node.type !== 'custom-connector') {
+        if (node.type === 'arrow' || node.type === 'line' || node.type === 'custom-connector') {
+          if (!node.startPoint || !node.endPoint) {
             needsAutoLayout = true;
           }
+        } else if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+          needsAutoLayout = true;
         }
       }
 

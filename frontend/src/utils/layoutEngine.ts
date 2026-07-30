@@ -3,9 +3,15 @@ import type { DiagramNode } from '../types';
 
 /** Calculate smart dimensions based on node type and content length */
 function getSmartDimensions(node: DiagramNode): { width: number; height: number } {
-  // If the node already has explicit dimensions, respect them
-  if (node.dimensions?.width && node.dimensions?.height &&
-      !(node.dimensions.width === 220 && node.dimensions.height === 90)) {
+  const isDefault = node.dimensions && (
+    (node.dimensions.width === 220 && node.dimensions.height === 90) ||
+    (node.dimensions.width === 160 && node.dimensions.height === 60) ||
+    (node.dimensions.width === 130 && node.dimensions.height === 50) ||
+    (node.dimensions.width === 160 && node.dimensions.height === 80) ||
+    (node.dimensions.width === 200 && node.dimensions.height === 80)
+  );
+
+  if (node.dimensions?.width && node.dimensions?.height && !isDefault) {
     return { width: node.dimensions.width, height: node.dimensions.height };
   }
 
