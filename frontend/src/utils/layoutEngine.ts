@@ -32,7 +32,7 @@ function getSmartDimensions(node: DiagramNode): { width: number; height: number 
 
 export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'TB', ranksep: 180, nodesep: 150 });
+  g.setGraph({ rankdir: 'TB', ranksep: 80, nodesep: 100 });
   g.setDefaultEdgeLabel(() => ({}));
 
   const isEdge = (n: DiagramNode) => ['arrow', 'line', 'custom-connector'].includes(n.type);
