@@ -69,8 +69,7 @@ public class AIFallbackRingManager implements AIService {
                 }
                 
                 logger.info("Attempting AI edit using provider: {}", provider.getProviderName());
-                String editPrompt = "Context Nodes:\n" + contextNodes + "\n\nEdit Instruction:\n" + prompt;
-                String jsonResult = provider.generate(editPrompt, AIPrompts.EDIT_PROMPT, imageBase64);
+                String jsonResult = provider.edit(prompt, contextNodes, imageBase64);
                 
                 jsonResult = VirtualCanvasApplicator.applyDynamicSizingToCanvas(jsonResult);
                 
