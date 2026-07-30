@@ -54,19 +54,49 @@ public class VirtualCanvasApplicator {
                         newIdMap.put("$$NEW_" + newCounter + "$$", newId);
                         newCounter++;
 
+                        String nodeType = mapNodeTypeAlias(args.path("type").asText("box"));
+                        String content = args.path("content").asText("");
+
                         ObjectNode node = objectMapper.createObjectNode();
                         node.put("id", newId);
-                        node.put("type", mapNodeTypeAlias(args.path("type").asText("box")));
-                        node.put("content", args.path("content").asText(""));
+                        node.put("type", nodeType);
+                        node.put("content", content);
 
                         ObjectNode position = objectMapper.createObjectNode();
                         position.put("x", args.path("x").asDouble(0));
                         position.put("y", args.path("y").asDouble(0));
                         node.set("position", position);
 
+                        // Smart dimension calculation based on shape type and content length
+                        double baseWidth = 160;
+                        double baseHeight = 60;
+                        
+                        if (nodeType.equals("pill")) {
+                            baseWidth = 130;
+                            baseHeight = 50;
+                        } else if (nodeType.equals("diamond")) {
+                            baseWidth = 160;
+                            baseHeight = 80;
+                        }
+                        
+                        int charCount = content.length();
+                        double calcWidth = Math.max(baseWidth, Math.min(280, charCount * 8.0 + 40));
+                        int lines = (int) Math.ceil((charCount * 8.0) / Math.max(1, calcWidth - 40));
+                        if (lines == 0) lines = 1;
+                        double calcHeight = Math.max(baseHeight, lines * 20.0 + 40);
+                        
+                        double w = args.has("width") ? args.path("width").asDouble() : calcWidth;
+                        double h = args.has("height") ? args.path("height").asDouble() : calcHeight;
+                        
+                        // If LLM blindly used the 160x60 default or 220x90, override with our smart calc
+                        if ((w == 160 && h == 60) || (w == 220 && h == 90)) {
+                            w = calcWidth;
+                            h = calcHeight;
+                        }
+
                         ObjectNode dimensions = objectMapper.createObjectNode();
-                        dimensions.put("width", args.path("width").asDouble(220));
-                        dimensions.put("height", args.path("height").asDouble(90));
+                        dimensions.put("width", w);
+                        dimensions.put("height", h);
                         node.set("dimensions", dimensions);
 
                         ObjectNode style = objectMapper.createObjectNode();
