@@ -383,7 +383,7 @@ public class VirtualCanvasApplicator {
     /**
      * Gracefully maps LLM hallucinated node types to correct frontend types.
      */
-    private String mapNodeTypeAlias(String type) {
+    public static String mapNodeTypeAlias(String type) {
         if (type == null) return "box";
         switch (type.toLowerCase().trim()) {
             case "rhombus":
@@ -408,6 +408,84 @@ public class VirtualCanvasApplicator {
                 return "document";
             default:
                 return type;
+        }
+    }
+
+    /**
+     * Helper to clean markdown JSON blocks.
+     */
+    private static String extractJson(String text) {
+        if (text == null) return "[]";
+        text = text.trim();
+        if (text.startsWith("```json")) {
+            text = text.substring(7);
+        } else if (text.startsWith("```")) {
+            text = text.substring(3);
+        }
+        if (text.endsWith("```")) {
+            text = text.substring(0, text.length() - 3);
+        }
+        return text.trim();
+    }
+
+    /**
+     * Processes a direct JSON array string (from 2-step AI) and applies smart resizing to all nodes.
+     */
+    public static String applyDynamicSizingToCanvas(String jsonTree) {
+        try {
+            jsonTree = extractJson(jsonTree);
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(jsonTree);
+            if (!root.isArray()) return jsonTree;
+
+            ArrayNode canvasArray = (ArrayNode) root;
+            for (JsonNode n : canvasArray) {
+                if (!n.isObject()) continue;
+                ObjectNode node = (ObjectNode) n;
+                String type = node.path("type").asText("box");
+                if (type.equals("arrow") || type.equals("line")) continue;
+
+                // Fix hallucinated types
+                type = mapNodeTypeAlias(type);
+                node.put("type", type);
+
+                String content = node.path("content").asText("");
+                double w = 220;
+                double h = 90;
+                if (node.has("dimensions")) {
+                    w = node.path("dimensions").path("width").asDouble(220);
+                    h = node.path("dimensions").path("height").asDouble(90);
+                }
+
+                double baseWidth = 160;
+                double baseHeight = 60;
+                if (type.equals("pill")) {
+                    baseWidth = 130;
+                    baseHeight = 50;
+                } else if (type.equals("diamond")) {
+                    baseWidth = 160;
+                    baseHeight = 80;
+                }
+
+                int charCount = content.length();
+                double calcWidth = Math.max(baseWidth, Math.min(280, charCount * 8.0 + 40));
+                int lines = (int) Math.ceil((charCount * 8.0) / Math.max(1, calcWidth - 40));
+                if (lines == 0) lines = 1;
+                double calcHeight = Math.max(baseHeight, lines * 20.0 + 40);
+
+                if ((w == 160 && h == 60) || (w == 220 && h == 90)) {
+                    w = calcWidth;
+                    h = calcHeight;
+                }
+
+                ObjectNode dimensions = mapper.createObjectNode();
+                dimensions.put("width", w);
+                dimensions.put("height", h);
+                node.set("dimensions", dimensions);
+            }
+            return mapper.writeValueAsString(canvasArray);
+        } catch (Exception e) {
+            return jsonTree;
         }
     }
 }

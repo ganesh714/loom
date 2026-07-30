@@ -45,6 +45,8 @@ public class AIFallbackRingManager implements AIService {
                 String pass2Prompt = "SLD Blueprint:\n" + sld + "\n\nOriginal Request Context:\n" + prompt;
                 String jsonResult = provider.generate(pass2Prompt, AIPrompts.PASS2_STYLE_PROMPT, null);
                 
+                jsonResult = VirtualCanvasApplicator.applyDynamicSizingToCanvas(jsonResult);
+                
                 logger.info("Successfully completed two-pass diagram generation using {}", provider.getProviderName());
                 return jsonResult;
                 
@@ -67,17 +69,20 @@ public class AIFallbackRingManager implements AIService {
                 }
                 
                 logger.info("Attempting AI edit using provider: {}", provider.getProviderName());
-                String result = provider.edit(prompt, contextNodes, imageBase64);
+                String editPrompt = "Context Nodes:\n" + contextNodes + "\n\nEdit Instruction:\n" + prompt;
+                String jsonResult = provider.generate(editPrompt, AIPrompts.EDIT_PROMPT, imageBase64);
+                
+                jsonResult = VirtualCanvasApplicator.applyDynamicSizingToCanvas(jsonResult);
                 
                 logger.info("Successfully edited diagram nodes using {}", provider.getProviderName());
-                return result;
+                return jsonResult;
                 
             } catch (Exception e) {
-                logger.warn("Provider {} failed to edit. Reason: {}. Falling back to next provider...", provider.getProviderName(), e.getMessage());
+                logger.warn("Provider {} failed during edit generation. Reason: {}. Falling back...", provider.getProviderName(), e.getMessage());
             }
         }
         
-        logger.error("All AI providers in the fallback ring have failed to edit.");
+        logger.error("All AI providers failed for edit operation.");
         throw new Exception("Unable to edit diagram nodes. All configured AI providers failed.");
     }
 
