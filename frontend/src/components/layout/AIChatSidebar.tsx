@@ -424,7 +424,7 @@ export function AIChatSidebar() {
           return {
             ...n,
             position: n.position || { x: centerX - 110 + offset, y: centerY - 45 + offset },
-            dimensions: n.dimensions || { width: 220, height: 90 }
+            dimensions: n.dimensions || { width: 160, height: 60 }
           };
         });
         nextNodes = [...nextNodes, ...additions];
@@ -455,7 +455,7 @@ export function AIChatSidebar() {
           parsedNodes = parsedNodes.map((n: any) => ({
             ...n,
             position: n.position || { x: 0, y: 0 },
-            dimensions: n.dimensions || { width: 220, height: 90 }
+            // Don't set dimensions here — autoLayoutNodes handles smart sizing
           }));
           
           if (aiMode === 'generate') {
