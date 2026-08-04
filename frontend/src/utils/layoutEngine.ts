@@ -6,6 +6,7 @@ function getSmartDimensions(node: DiagramNode): { width: number; height: number 
   const isDefault = node.dimensions && (
     (node.dimensions.width === 220 && node.dimensions.height === 90) ||
     (node.dimensions.width === 160 && node.dimensions.height === 60) ||
+    (node.dimensions.width === 150 && node.dimensions.height === 60) ||
     (node.dimensions.width === 130 && node.dimensions.height === 50) ||
     (node.dimensions.width === 160 && node.dimensions.height === 80) ||
     (node.dimensions.width === 200 && node.dimensions.height === 80)

@@ -71,7 +71,7 @@ public class VirtualCanvasApplicator {
                         double baseWidth = 160;
                         double baseHeight = 60;
                         
-                        if (nodeType.equals("pill")) {
+                        if (nodeType.equals("pill") || nodeType.equals("terminator") || nodeType.equals("rectangle")) {
                             baseWidth = 130;
                             baseHeight = 50;
                         } else if (nodeType.equals("diamond")) {
@@ -89,7 +89,7 @@ public class VirtualCanvasApplicator {
                         double h = args.has("height") ? args.path("height").asDouble() : calcHeight;
                         
                         // If LLM blindly used the 160x60 default or 220x90, override with our smart calc
-                        if ((w == 160 && h == 60) || (w == 220 && h == 90)) {
+                        if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
                             w = calcWidth;
                             h = calcHeight;
                         }
@@ -211,19 +211,19 @@ public class VirtualCanvasApplicator {
                         String targetAnchor = args.path("targetAnchor").asText("closest");
 
                         double srcX = 0, srcY = 0, tgtX = 0, tgtY = 0;
-                        double srcW = 220, srcH = 90, tgtW = 220, tgtH = 90;
+                        double srcW = 160, srcH = 60, tgtW = 160, tgtH = 60;
 
                         if (sourceNode != null) {
                             srcX = sourceNode.path("position").path("x").asDouble(0);
                             srcY = sourceNode.path("position").path("y").asDouble(0);
-                            srcW = sourceNode.path("dimensions").path("width").asDouble(220);
-                            srcH = sourceNode.path("dimensions").path("height").asDouble(90);
+                            srcW = sourceNode.path("dimensions").path("width").asDouble(160);
+                            srcH = sourceNode.path("dimensions").path("height").asDouble(60);
                         }
                         if (targetNode != null) {
                             tgtX = targetNode.path("position").path("x").asDouble(0);
                             tgtY = targetNode.path("position").path("y").asDouble(0);
-                            tgtW = targetNode.path("dimensions").path("width").asDouble(220);
-                            tgtH = targetNode.path("dimensions").path("height").asDouble(90);
+                            tgtW = targetNode.path("dimensions").path("width").asDouble(160);
+                            tgtH = targetNode.path("dimensions").path("height").asDouble(60);
                         }
 
                         // Auto-detect best anchors based on relative positions
@@ -459,7 +459,7 @@ public class VirtualCanvasApplicator {
 
                 double baseWidth = 160;
                 double baseHeight = 60;
-                if (type.equals("pill")) {
+                if (type.equals("pill") || type.equals("terminator") || type.equals("rectangle")) {
                     baseWidth = 130;
                     baseHeight = 50;
                 } else if (type.equals("diamond")) {
@@ -473,7 +473,7 @@ public class VirtualCanvasApplicator {
                 if (lines == 0) lines = 1;
                 double calcHeight = Math.max(baseHeight, lines * 20.0 + 40);
 
-                if ((w == 160 && h == 60) || (w == 220 && h == 90)) {
+                if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
                     w = calcWidth;
                     h = calcHeight;
                 }
