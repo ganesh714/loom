@@ -21,7 +21,7 @@ function getSmartDimensions(node: DiagramNode): { width: number; height: number 
   let baseWidth = 160;
   let baseHeight = 60;
 
-  if (node.type === 'pill' || node.type === 'terminator') {
+  if (node.type === 'pill' || node.type === 'terminator' || node.type === 'rectangle') {
     baseWidth = 130;
     baseHeight = 50;
   } else if (node.type === 'diamond' || node.type === 'circle') {

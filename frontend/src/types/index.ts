@@ -58,7 +58,7 @@ export type ArrowHeadType =
 
 export type NodeType = 
   // Existing
-  'box' | 'diamond' | 'circle' | 'triangle' | 'star' | 'pill' |
+  'box' | 'rectangle' | 'diamond' | 'circle' | 'triangle' | 'star' | 'pill' |
   'hexagon' | 'parallelogram' | 'database' | 'note' | 'path' | 'comment' |
   'line' | 'arrow' |
   // UML
