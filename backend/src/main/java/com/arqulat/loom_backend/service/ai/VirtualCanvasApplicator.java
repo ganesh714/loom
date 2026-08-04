@@ -35,11 +35,21 @@ public class VirtualCanvasApplicator {
      */
     public String applyToolCalls(JsonNode toolCallsNode, String currentCanvas) throws Exception {
         ArrayNode canvasArray = (ArrayNode) objectMapper.readTree(currentCanvas);
-        Map<String, String> newIdMap = new HashMap<>(); // $$NEW_0$$ -> actual UUID
-        int newCounter = 0;
-
         // Track which anchors are already occupied per node for smart anchor selection
         Map<String, Set<String>> occupiedAnchors = buildOccupiedAnchors(canvasArray);
+        
+        // Track edges to prevent exact duplicates (e.g. 5 lines from Server to Database)
+        Set<String> seenEdges = new HashSet<>();
+        for (JsonNode item : canvasArray) {
+            String type = item.path("type").asText("");
+            if ("arrow".equals(type) || "line".equals(type)) {
+                String sId = item.path("startConnection").path("nodeId").asText("");
+                String tId = item.path("endConnection").path("nodeId").asText("");
+                if (!sId.isEmpty() && !tId.isEmpty()) {
+                    seenEdges.add(sId + "->" + tId);
+                }
+            }
+        }
 
         if (!toolCallsNode.isArray()) {
             logger.warn("toolCalls is not an array, returning canvas unchanged");
@@ -436,8 +446,8 @@ public class VirtualCanvasApplicator {
 
                 // Heavy penalty for occupied anchors (but don't skip — allow reuse as last resort)
                 double occupiedPenalty = 0;
-                if (srcOccupied.contains(srcA)) occupiedPenalty += 0.8;
-                if (tgtOccupied.contains(tgtA)) occupiedPenalty += 0.8;
+                if (srcOccupied.contains(srcA)) occupiedPenalty += 0.4;
+                if (tgtOccupied.contains(tgtA)) occupiedPenalty += 0.4;
 
                 // Angular distance: how well does srcA face the target?
                 double srcDist = Math.abs(normalizeAngle(angleToTarget - anchorAngles[i]));
@@ -516,32 +526,37 @@ public class VirtualCanvasApplicator {
             double nodeW = node.path("dimensions").path("width").asDouble(160);
             double nodeH = node.path("dimensions").path("height").asDouble(60);
 
+            double centerX = nodeX + nodeW / 2.0;
+            double centerY = nodeY + nodeH / 2.0;
+            double gap = 20.0;
+
             int n = edgeRefs.size();
+            double startOffset = -(n - 1) * gap / 2.0;
 
             for (int idx = 0; idx < n; idx++) {
                 int edgeIdx = edgeRefs.get(idx)[0];
                 int pointType = edgeRefs.get(idx)[1]; // 0=start, 1=end
                 ObjectNode edge = (ObjectNode) canvasArray.get(edgeIdx);
 
-                double fraction = (double) (idx + 1) / (n + 1);
+                double offset = startOffset + idx * gap;
                 double newX, newY;
 
                 switch (anchor) {
                     case "top":
-                        newX = nodeX + nodeW * fraction;
+                        newX = centerX + offset;
                         newY = nodeY;
                         break;
                     case "bottom":
-                        newX = nodeX + nodeW * fraction;
+                        newX = centerX + offset;
                         newY = nodeY + nodeH;
                         break;
                     case "left":
                         newX = nodeX;
-                        newY = nodeY + nodeH * fraction;
+                        newY = centerY + offset;
                         break;
                     case "right":
                         newX = nodeX + nodeW;
-                        newY = nodeY + nodeH * fraction;
+                        newY = centerY + offset;
                         break;
                     default:
                         continue;
