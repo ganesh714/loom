@@ -436,8 +436,8 @@ public class VirtualCanvasApplicator {
 
                 // Heavy penalty for occupied anchors (but don't skip — allow reuse as last resort)
                 double occupiedPenalty = 0;
-                if (srcOccupied.contains(srcA)) occupiedPenalty += 3.0;
-                if (tgtOccupied.contains(tgtA)) occupiedPenalty += 3.0;
+                if (srcOccupied.contains(srcA)) occupiedPenalty += 0.8;
+                if (tgtOccupied.contains(tgtA)) occupiedPenalty += 0.8;
 
                 // Angular distance: how well does srcA face the target?
                 double srcDist = Math.abs(normalizeAngle(angleToTarget - anchorAngles[i]));
