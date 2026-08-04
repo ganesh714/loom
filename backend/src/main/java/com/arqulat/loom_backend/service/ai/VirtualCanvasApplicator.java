@@ -209,6 +209,16 @@ public class VirtualCanvasApplicator {
                     case "connect_nodes": {
                         String sourceId = resolveId(args.path("sourceId").asText(), newIdMap);
                         String targetNodeId = resolveId(args.path("targetId").asText(), newIdMap);
+
+                        // Deduplicate: skip if this exact edge (or its reverse) already exists
+                        String edgeFwd = sourceId + "->" + targetNodeId;
+                        String edgeRev = targetNodeId + "->" + sourceId;
+                        if (seenEdges.contains(edgeFwd) || seenEdges.contains(edgeRev)) {
+                            logger.info("Skipping duplicate/reverse edge: {}", edgeFwd);
+                            break;
+                        }
+                        seenEdges.add(edgeFwd);
+
                         String edgeId = UUID.randomUUID().toString();
                         newIdMap.put("$$NEW_" + newCounter + "$$", edgeId);
                         newCounter++;
@@ -337,8 +347,8 @@ public class VirtualCanvasApplicator {
             }
         }
 
-        // Post-pass: spread overlapping anchor points on the same side
-        canvasArray = spreadOverlappingAnchors(canvasArray);
+        // Spreading disabled — overlapping lines at center look cleaner than barcode-spread parallel lines
+        // canvasArray = spreadOverlappingAnchors(canvasArray);
 
         return objectMapper.writeValueAsString(canvasArray);
     }

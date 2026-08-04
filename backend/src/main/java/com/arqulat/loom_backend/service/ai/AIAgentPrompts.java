@@ -31,8 +31,12 @@ public class AIAgentPrompts {
             "- For decision/condition branches, use ONLY short labels: 'True', 'False', 'Yes', 'No'.\n" +
             "- For simple sequential flow, set label to empty string ''.\n" +
             "- Only use descriptive labels for complex/ambiguous relationships (e.g. 'implements', 'extends').\n" +
-            "- DO NOT add verbose labels like 'initial condition', 'execute if true', 'completion'. These clutter the diagram.\n" +
-            "- AVOID bidirectional connections (e.g. A->B and B->A) unless strictly necessary. Usually a single unidirectional flow represents the primary interaction.\n\n" +
+            "- DO NOT add verbose labels like 'initial condition', 'execute if true', 'completion'. These clutter the diagram.\n\n" +
+            "CONNECTION RULES:\n" +
+            "- NEVER create reverse/return connections. If A->B exists, do NOT also add B->A.\n" +
+            "- Pick ONE direction per relationship (the primary data/control flow direction).\n" +
+            "- Each pair of entities should have AT MOST one connection between them.\n" +
+            "- Keep total relationships minimal — only include relationships essential to understanding the architecture.\n\n" +
             "NODE SHAPE HINTS (use in the 'role' field):\n" +
             "- Conditions/decisions -> role should mention 'decision'\n" +
             "- Start/End -> role should mention 'terminal'\n" +
