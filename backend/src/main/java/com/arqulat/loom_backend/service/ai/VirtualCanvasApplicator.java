@@ -38,6 +38,9 @@ public class VirtualCanvasApplicator {
         Map<String, String> newIdMap = new HashMap<>(); // $$NEW_0$$ -> actual UUID
         int newCounter = 0;
 
+        // Track which anchors are already occupied per node for smart anchor selection
+        Map<String, Set<String>> occupiedAnchors = buildOccupiedAnchors(canvasArray);
+
         if (!toolCallsNode.isArray()) {
             logger.warn("toolCalls is not an array, returning canvas unchanged");
             return currentCanvas;
@@ -234,18 +237,19 @@ public class VirtualCanvasApplicator {
                         double dx = tgtCenterX - srcCenterX;
                         double dy = tgtCenterY - srcCenterY;
 
-                        if (sourceAnchor.equals("bottom") && targetAnchor.equals("top")) {
-                            // Use defaults — most common case (top-down flow)
-                        } else if (sourceAnchor.equals("closest")) {
-                            // Auto-detect
-                            if (Math.abs(dx) > Math.abs(dy)) {
-                                sourceAnchor = dx > 0 ? "right" : "left";
-                                targetAnchor = dx > 0 ? "left" : "right";
-                            } else {
-                                sourceAnchor = dy > 0 ? "bottom" : "top";
-                                targetAnchor = dy > 0 ? "top" : "bottom";
-                            }
+                        if (sourceAnchor.equals("closest") || targetAnchor.equals("closest")) {
+                            // Smart anchor selection based on angle and occupied anchors
+                            String[] bestAnchors = selectSmartAnchors(
+                                srcCenterX, srcCenterY, tgtCenterX, tgtCenterY,
+                                occupiedAnchors.getOrDefault(sourceId, new HashSet<>()),
+                                occupiedAnchors.getOrDefault(targetNodeId, new HashSet<>())
+                            );
+                            if (sourceAnchor.equals("closest")) sourceAnchor = bestAnchors[0];
+                            if (targetAnchor.equals("closest")) targetAnchor = bestAnchors[1];
                         }
+                        // Track occupied anchors for subsequent connections
+                        occupiedAnchors.computeIfAbsent(sourceId, k -> new HashSet<>()).add(sourceAnchor);
+                        occupiedAnchors.computeIfAbsent(targetNodeId, k -> new HashSet<>()).add(targetAnchor);
 
                         // Calculate actual start and end points based on anchors
                         double startPtX = getAnchorX(srcX, srcW, sourceAnchor);
@@ -320,6 +324,9 @@ public class VirtualCanvasApplicator {
             }
         }
 
+        // Post-pass: spread overlapping anchor points on the same side
+        canvasArray = spreadOverlappingAnchors(canvasArray);
+
         return objectMapper.writeValueAsString(canvasArray);
     }
 
@@ -378,6 +385,193 @@ public class VirtualCanvasApplicator {
             case "right":
             default: return nodeY + nodeH / 2;
         }
+    }
+
+    /**
+     * Builds a map of occupied anchors per node from existing edges in the canvas.
+     */
+    private Map<String, Set<String>> buildOccupiedAnchors(ArrayNode canvasArray) {
+        Map<String, Set<String>> occupied = new HashMap<>();
+        for (JsonNode item : canvasArray) {
+            String type = item.path("type").asText("");
+            if (!"arrow".equals(type) && !"line".equals(type)) continue;
+
+            String startNodeId = item.path("startConnection").path("nodeId").asText("");
+            String startAnchor = item.path("startConnection").path("anchor").asText("");
+            String endNodeId = item.path("endConnection").path("nodeId").asText("");
+            String endAnchor = item.path("endConnection").path("anchor").asText("");
+
+            if (!startNodeId.isEmpty() && !startAnchor.isEmpty() && !startAnchor.equals("closest")) {
+                occupied.computeIfAbsent(startNodeId, k -> new HashSet<>()).add(startAnchor);
+            }
+            if (!endNodeId.isEmpty() && !endAnchor.isEmpty() && !endAnchor.equals("closest")) {
+                occupied.computeIfAbsent(endNodeId, k -> new HashSet<>()).add(endAnchor);
+            }
+        }
+        return occupied;
+    }
+
+    /**
+     * Selects the best (sourceAnchor, targetAnchor) pair based on angle and occupied anchors.
+     * Prefers perpendicular pairs (for clean L-shape routing) and avoids reusing occupied sides.
+     */
+    private String[] selectSmartAnchors(double srcCX, double srcCY, double tgtCX, double tgtCY,
+                                         Set<String> srcOccupied, Set<String> tgtOccupied) {
+        double dx = tgtCX - srcCX;
+        double dy = tgtCY - srcCY;
+        double angleToTarget = Math.atan2(dy, dx);
+        double angleFromTarget = normalizeAngle(angleToTarget + Math.PI);
+
+        String[] allAnchors = {"right", "bottom", "left", "top"};
+        double[] anchorAngles = {0, Math.PI / 2, Math.PI, -Math.PI / 2};
+
+        double bestScore = Double.MAX_VALUE;
+        String bestSrc = "bottom";
+        String bestTgt = "top";
+
+        for (int i = 0; i < 4; i++) {
+            for (int j = 0; j < 4; j++) {
+                String srcA = allAnchors[i];
+                String tgtA = allAnchors[j];
+
+                // Heavy penalty for occupied anchors (but don't skip — allow reuse as last resort)
+                double occupiedPenalty = 0;
+                if (srcOccupied.contains(srcA)) occupiedPenalty += 3.0;
+                if (tgtOccupied.contains(tgtA)) occupiedPenalty += 3.0;
+
+                // Angular distance: how well does srcA face the target?
+                double srcDist = Math.abs(normalizeAngle(angleToTarget - anchorAngles[i]));
+                // Angular distance: how well does tgtA face the source?
+                double tgtDist = Math.abs(normalizeAngle(angleFromTarget - anchorAngles[j]));
+
+                // Bonus for perpendicular pairs (L-shape routing)
+                boolean srcHoriz = srcA.equals("left") || srcA.equals("right");
+                boolean tgtHoriz = tgtA.equals("left") || tgtA.equals("right");
+                double perpendicularBonus = (srcHoriz != tgtHoriz) ? -0.3 : 0;
+
+                double totalScore = srcDist + tgtDist + perpendicularBonus + occupiedPenalty;
+
+                if (totalScore < bestScore) {
+                    bestScore = totalScore;
+                    bestSrc = srcA;
+                    bestTgt = tgtA;
+                }
+            }
+        }
+
+        return new String[]{bestSrc, bestTgt};
+    }
+
+    /**
+     * Normalizes an angle to the range [-π, π].
+     */
+    private double normalizeAngle(double angle) {
+        while (angle > Math.PI) angle -= 2 * Math.PI;
+        while (angle < -Math.PI) angle += 2 * Math.PI;
+        return angle;
+    }
+
+    /**
+     * Post-processing pass: when multiple edges share the same (nodeId, anchor side),
+     * spread their connection points evenly along that side instead of all hitting center.
+     */
+    private ArrayNode spreadOverlappingAnchors(ArrayNode canvasArray) {
+        // Group edges by (nodeId, anchor). Value: list of [edgeIndex, 0=startPoint / 1=endPoint]
+        Map<String, List<int[]>> groups = new HashMap<>();
+
+        for (int i = 0; i < canvasArray.size(); i++) {
+            JsonNode item = canvasArray.get(i);
+            String type = item.path("type").asText("");
+            if (!"arrow".equals(type) && !"line".equals(type)) continue;
+
+            String startNodeId = item.path("startConnection").path("nodeId").asText("");
+            String startAnchor = item.path("startConnection").path("anchor").asText("");
+            String endNodeId = item.path("endConnection").path("nodeId").asText("");
+            String endAnchor = item.path("endConnection").path("anchor").asText("");
+
+            if (!startNodeId.isEmpty() && !startAnchor.isEmpty() && !startAnchor.equals("closest")) {
+                groups.computeIfAbsent(startNodeId + ":" + startAnchor, k -> new ArrayList<>())
+                      .add(new int[]{i, 0});
+            }
+            if (!endNodeId.isEmpty() && !endAnchor.isEmpty() && !endAnchor.equals("closest")) {
+                groups.computeIfAbsent(endNodeId + ":" + endAnchor, k -> new ArrayList<>())
+                      .add(new int[]{i, 1});
+            }
+        }
+
+        // Spread groups with more than 1 edge
+        for (Map.Entry<String, List<int[]>> entry : groups.entrySet()) {
+            List<int[]> edgeRefs = entry.getValue();
+            if (edgeRefs.size() <= 1) continue;
+
+            String[] parts = entry.getKey().split(":");
+            String nodeId = parts[0];
+            String anchor = parts[1];
+
+            JsonNode node = findNode(canvasArray, nodeId);
+            if (node == null) continue;
+
+            double nodeX = node.path("position").path("x").asDouble(0);
+            double nodeY = node.path("position").path("y").asDouble(0);
+            double nodeW = node.path("dimensions").path("width").asDouble(160);
+            double nodeH = node.path("dimensions").path("height").asDouble(60);
+
+            int n = edgeRefs.size();
+
+            for (int idx = 0; idx < n; idx++) {
+                int edgeIdx = edgeRefs.get(idx)[0];
+                int pointType = edgeRefs.get(idx)[1]; // 0=start, 1=end
+                ObjectNode edge = (ObjectNode) canvasArray.get(edgeIdx);
+
+                double fraction = (double) (idx + 1) / (n + 1);
+                double newX, newY;
+
+                switch (anchor) {
+                    case "top":
+                        newX = nodeX + nodeW * fraction;
+                        newY = nodeY;
+                        break;
+                    case "bottom":
+                        newX = nodeX + nodeW * fraction;
+                        newY = nodeY + nodeH;
+                        break;
+                    case "left":
+                        newX = nodeX;
+                        newY = nodeY + nodeH * fraction;
+                        break;
+                    case "right":
+                        newX = nodeX + nodeW;
+                        newY = nodeY + nodeH * fraction;
+                        break;
+                    default:
+                        continue;
+                }
+
+                String pointField = (pointType == 0) ? "startPoint" : "endPoint";
+                ObjectNode point = objectMapper.createObjectNode();
+                point.put("x", newX);
+                point.put("y", newY);
+                edge.set(pointField, point);
+
+                // Recalculate bounding box
+                double sx = edge.path("startPoint").path("x").asDouble();
+                double sy = edge.path("startPoint").path("y").asDouble();
+                double ex = edge.path("endPoint").path("x").asDouble();
+                double ey = edge.path("endPoint").path("y").asDouble();
+
+                ObjectNode pos = objectMapper.createObjectNode();
+                pos.put("x", Math.min(sx, ex));
+                pos.put("y", Math.min(sy, ey));
+                edge.set("position", pos);
+
+                ObjectNode dim = objectMapper.createObjectNode();
+                dim.put("width", Math.max(15, Math.abs(ex - sx)));
+                dim.put("height", Math.max(15, Math.abs(ey - sy)));
+                edge.set("dimensions", dim);
+            }
+        }
+
+        return canvasArray;
     }
 
     /**

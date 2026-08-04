@@ -902,7 +902,14 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
               const effectiveArrowType = node.arrowType || (node.type === 'arrow' ? 'single' : 'none');
               const dasharray = node.lineStyle === 'dashed' ? '5 4' : node.lineStyle === 'dotted' ? '2 2' : undefined;
 
-              const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
+              const startAnchor = node.startConnection?.anchor;
+              const endAnchor = node.endConnection?.anchor;
+              const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+              const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+              const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+              const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+              const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+              const isVerticalElbow = isStartVert || (!startAnchor);
               const midY = (startY + endY) / 2;
               const midX = (startX + endX) / 2;
               
@@ -914,7 +921,23 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
                   elbowPath += ` L ${wp.x - node.position.x} ${wp.y - node.position.y}`;
                 }
                 elbowPath += ` L ${endX} ${endY}`;
+              } else if (isPerpendicular) {
+                // L-shape: 2 segments for perpendicular anchor pairs (e.g. right→top)
+                if (isStartHoriz) {
+                  // Horizontal first, then vertical
+                  elbowPath = `M ${startX} ${startY} L ${endX} ${startY} L ${endX} ${endY}`;
+                  generatedWaypoints = [
+                    { x: endX + node.position.x, y: startY + node.position.y }
+                  ];
+                } else {
+                  // Vertical first, then horizontal
+                  elbowPath = `M ${startX} ${startY} L ${startX} ${endY} L ${endX} ${endY}`;
+                  generatedWaypoints = [
+                    { x: startX + node.position.x, y: endY + node.position.y }
+                  ];
+                }
               } else {
+                // Step shape: 3 segments for parallel anchor pairs (existing behavior)
                 elbowPath = isVerticalElbow 
                   ? `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
                   : `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
@@ -1116,19 +1139,34 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
                 labelX += labelOffset; // vertical segment -> push right
               }
             } else if (node.routing === 'elbow') {
-              const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
-              const midY = (startY + endY) / 2;
-              const midX = (startX + endX) / 2;
-              if (isVerticalElbow) {
-                // Elbow goes: startX,startY -> startX,midY -> endX,midY -> endX,endY
-                // Label on the horizontal middle segment
-                labelX = (startX + endX) / 2;
-                labelY = midY - labelOffset;
+              const startAnchorL = node.startConnection?.anchor;
+              const endAnchorL = node.endConnection?.anchor;
+              const isStartHorizL = startAnchorL === 'left' || startAnchorL === 'right';
+              const isStartVertL = startAnchorL === 'top' || startAnchorL === 'bottom';
+              const isEndHorizL = endAnchorL === 'left' || endAnchorL === 'right';
+              const isEndVertL = endAnchorL === 'top' || endAnchorL === 'bottom';
+              const isPerpendicularL = (isStartHorizL && isEndVertL) || (isStartVertL && isEndHorizL);
+              
+              if (isPerpendicularL) {
+                // L-shape: label at the corner
+                if (isStartHorizL) {
+                  labelX = endX;
+                  labelY = startY - labelOffset;
+                } else {
+                  labelX = startX + labelOffset;
+                  labelY = endY;
+                }
               } else {
-                // Elbow goes: startX,startY -> midX,startY -> midX,endY -> endX,endY
-                // Label on the vertical middle segment
-                labelX = midX + labelOffset;
-                labelY = (startY + endY) / 2;
+                const isVerticalElbowL = isStartVertL || !startAnchorL;
+                const midYL = (startY + endY) / 2;
+                const midXL = (startX + endX) / 2;
+                if (isVerticalElbowL) {
+                  labelX = (startX + endX) / 2;
+                  labelY = midYL - labelOffset;
+                } else {
+                  labelX = midXL + labelOffset;
+                  labelY = (startY + endY) / 2;
+                }
               }
             } else if (node.lineCurve === 'curved') {
               const dx = endX - startX;

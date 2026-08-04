@@ -84,13 +84,30 @@ export function detectCollisions(nodes: DiagramNode[], padding = 20): CollisionR
     if (edge.waypoints && edge.waypoints.length > 0) {
       points.push(...edge.waypoints);
     } else if (edge.routing === 'elbow') {
-      const isVerticalElbow = edge.startConnection?.anchor === 'bottom' || edge.startConnection?.anchor === 'top' || !edge.startConnection?.anchor;
-      if (isVerticalElbow) {
-        points.push({ x: edge.startPoint.x, y: (edge.startPoint.y + edge.endPoint.y) / 2 });
-        points.push({ x: edge.endPoint.x, y: (edge.startPoint.y + edge.endPoint.y) / 2 });
+      const startAnchor = edge.startConnection?.anchor;
+      const endAnchor = edge.endConnection?.anchor;
+      const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+      const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+      const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+      const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+      const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+
+      if (isPerpendicular) {
+        // L-shape: single corner waypoint
+        if (isStartHoriz) {
+          points.push({ x: edge.endPoint.x, y: edge.startPoint.y });
+        } else {
+          points.push({ x: edge.startPoint.x, y: edge.endPoint.y });
+        }
       } else {
-        points.push({ x: (edge.startPoint.x + edge.endPoint.x) / 2, y: edge.startPoint.y });
-        points.push({ x: (edge.startPoint.x + edge.endPoint.x) / 2, y: edge.endPoint.y });
+        const isVerticalElbow = isStartVert || !startAnchor;
+        if (isVerticalElbow) {
+          points.push({ x: edge.startPoint.x, y: (edge.startPoint.y + edge.endPoint.y) / 2 });
+          points.push({ x: edge.endPoint.x, y: (edge.startPoint.y + edge.endPoint.y) / 2 });
+        } else {
+          points.push({ x: (edge.startPoint.x + edge.endPoint.x) / 2, y: edge.startPoint.y });
+          points.push({ x: (edge.startPoint.x + edge.endPoint.x) / 2, y: edge.endPoint.y });
+        }
       }
     }
     points.push(edge.endPoint);
