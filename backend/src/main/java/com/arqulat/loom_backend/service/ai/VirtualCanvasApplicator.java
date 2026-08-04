@@ -35,6 +35,9 @@ public class VirtualCanvasApplicator {
      */
     public String applyToolCalls(JsonNode toolCallsNode, String currentCanvas) throws Exception {
         ArrayNode canvasArray = (ArrayNode) objectMapper.readTree(currentCanvas);
+        Map<String, String> newIdMap = new HashMap<>(); // $$NEW_0$$ -> actual UUID
+        int newCounter = 0;
+
         // Track which anchors are already occupied per node for smart anchor selection
         Map<String, Set<String>> occupiedAnchors = buildOccupiedAnchors(canvasArray);
         
