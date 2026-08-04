@@ -65,8 +65,21 @@ public class AIAgentPrompts {
             "- What is the primary flow of the diagram? (e.g., top-to-bottom for flowcharts)\n" +
             "- Assign a specific `row` and `col` integer index to EVERY entity.\n" +
             "  * E.g., for an if-else ladder, the main condition path might go down (col 0, rows 0, 1, 2) while the 'True' branches branch out horizontally (col 1, rows 0, 1, 2).\n" +
-            "- Ensure no two nodes occupy the exact same (row, col) unless intended to overlap.\n" +
-            "- What color scheme makes logical sense? (e.g., green for true/success, red for false/error).\n\n" +
+            "- SIBLING LAYOUT: When a node connects to 2+ children of equal importance (e.g., Backend -> Database + Auth), " +
+            "place them SIDE-BY-SIDE on the SAME ROW with different columns (e.g., Database at col -1, Auth at col 1) " +
+            "so they flank the parent symmetrically. Do NOT stack siblings vertically unless there is a sequential dependency.\n" +
+            "- Ensure no two nodes occupy the exact same (row, col) unless intended to overlap.\n\n" +
+            "=== COLOR PALETTE RULES ===\n" +
+            "Use a PROFESSIONAL, modern color scheme. DO NOT use washed-out pastels like #E8F5E9, #BBDEFB, #FFF9C4.\n" +
+            "Instead, use rich, saturated colors with good contrast:\n" +
+            "  - Dark backgrounds with light text look premium: e.g., bg '#1a1a2e', border '#16213e', text '#fff'\n" +
+            "  - Or use rich saturated colors: '#0d47a1' (deep blue), '#1b5e20' (deep green), '#b71c1c' (deep red)\n" +
+            "  - Group related nodes with the SAME color family, varying shade\n" +
+            "  - Databases/storage: use teal/cyan tones (#00695c, #00838f)\n" +
+            "  - Security/Auth nodes: use deep purple/indigo (#4a148c, #283593)\n" +
+            "  - User-facing nodes: use blue tones (#0d47a1, #1565c0)\n" +
+            "  - Infrastructure/servers: use dark grey/slate (#37474f, #455a64)\n" +
+            "  - ALWAYS set textColor to '#ffffff' for dark backgrounds\n\n" +
             "After your analysis, output the layout plan inside <RESULT> tags as JSON:\n" +
             "<RESULT>\n" +
             "{\n" +
@@ -79,7 +92,7 @@ public class AIAgentPrompts {
             "  \"gridMetrics\": { \"columnWidth\": 240, \"rowHeight\": 120 },\n" +
             "  \"nodeDefaults\": { \"width\": 160, \"height\": 60 },\n" +
             "  \"colorPalette\": {\n" +
-            "    \"Primary\": { \"bg\": \"#hex\", \"border\": \"#hex\", \"text\": \"#hex\" }\n" +
+            "    \"Primary\": { \"bg\": \"#1a1a2e\", \"border\": \"#16213e\", \"text\": \"#ffffff\" }\n" +
             "  },\n" +
             "  \"styleHints\": \"Decision nodes use type 'rhombus'.\"\n" +
             "}\n" +
