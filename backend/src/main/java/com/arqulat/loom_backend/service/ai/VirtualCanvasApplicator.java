@@ -482,11 +482,41 @@ public class VirtualCanvasApplicator {
     }
 
     /**
+     * Helper for symmetric spread: gets the fixed X coordinate for an anchor, applying dx if it spreads along X.
+     */
+    private double getAnchorX(JsonNode node, String anchor, double dx) {
+        double x = node.path("position").path("x").asDouble(0);
+        double w = node.path("dimensions").path("width").asDouble(160);
+        switch (anchor) {
+            case "left": return x;
+            case "right": return x + w;
+            case "top":
+            case "bottom":
+            default: return x + w / 2.0 + dx;
+        }
+    }
+
+    /**
+     * Helper for symmetric spread: gets the fixed Y coordinate for an anchor, applying dy if it spreads along Y.
+     */
+    private double getAnchorY(JsonNode node, String anchor, double dy) {
+        double y = node.path("position").path("y").asDouble(0);
+        double h = node.path("dimensions").path("height").asDouble(60);
+        switch (anchor) {
+            case "top": return y;
+            case "bottom": return y + h;
+            case "left":
+            case "right":
+            default: return y + h / 2.0 + dy;
+        }
+    }
+
+    /**
      * Post-processing pass: when multiple edges share the same (nodeId, anchor side),
-     * spread their connection points evenly along that side instead of all hitting center.
+     * spread their connection points evenly. By calculating a dominant dx/dy and applying it
+     * symmetrically, we prevent orthogonal routers from drawing jagged steps.
      */
     private ArrayNode spreadOverlappingAnchors(ArrayNode canvasArray) {
-        // Group edges by (nodeId, anchor). Value: list of [edgeIndex, 0=startPoint / 1=endPoint]
         Map<String, List<int[]>> groups = new HashMap<>();
 
         for (int i = 0; i < canvasArray.size(); i++) {
@@ -509,81 +539,80 @@ public class VirtualCanvasApplicator {
             }
         }
 
-        // Spread groups with more than 1 edge
+        Map<Integer, Double> edgeDx = new HashMap<>();
+        Map<Integer, Double> edgeDy = new HashMap<>();
+        Map<Integer, Integer> edgeDxGroupSize = new HashMap<>();
+        Map<Integer, Integer> edgeDyGroupSize = new HashMap<>();
+
         for (Map.Entry<String, List<int[]>> entry : groups.entrySet()) {
             List<int[]> edgeRefs = entry.getValue();
-            if (edgeRefs.size() <= 1) continue;
-
-            String[] parts = entry.getKey().split(":");
-            String nodeId = parts[0];
-            String anchor = parts[1];
-
-            JsonNode node = findNode(canvasArray, nodeId);
-            if (node == null) continue;
-
-            double nodeX = node.path("position").path("x").asDouble(0);
-            double nodeY = node.path("position").path("y").asDouble(0);
-            double nodeW = node.path("dimensions").path("width").asDouble(160);
-            double nodeH = node.path("dimensions").path("height").asDouble(60);
-
-            double centerX = nodeX + nodeW / 2.0;
-            double centerY = nodeY + nodeH / 2.0;
-            double gap = 20.0;
-
             int n = edgeRefs.size();
+            if (n <= 1) continue;
+
+            String anchor = entry.getKey().split(":")[1];
+            double gap = 20.0;
             double startOffset = -(n - 1) * gap / 2.0;
 
             for (int idx = 0; idx < n; idx++) {
                 int edgeIdx = edgeRefs.get(idx)[0];
-                int pointType = edgeRefs.get(idx)[1]; // 0=start, 1=end
-                ObjectNode edge = (ObjectNode) canvasArray.get(edgeIdx);
-
                 double offset = startOffset + idx * gap;
-                double newX, newY;
 
-                switch (anchor) {
-                    case "top":
-                        newX = centerX + offset;
-                        newY = nodeY;
-                        break;
-                    case "bottom":
-                        newX = centerX + offset;
-                        newY = nodeY + nodeH;
-                        break;
-                    case "left":
-                        newX = nodeX;
-                        newY = centerY + offset;
-                        break;
-                    case "right":
-                        newX = nodeX + nodeW;
-                        newY = centerY + offset;
-                        break;
-                    default:
-                        continue;
+                if (anchor.equals("top") || anchor.equals("bottom")) {
+                    if (n > edgeDxGroupSize.getOrDefault(edgeIdx, 0)) {
+                        edgeDx.put(edgeIdx, offset);
+                        edgeDxGroupSize.put(edgeIdx, n);
+                    }
+                } else {
+                    if (n > edgeDyGroupSize.getOrDefault(edgeIdx, 0)) {
+                        edgeDy.put(edgeIdx, offset);
+                        edgeDyGroupSize.put(edgeIdx, n);
+                    }
                 }
-
-                String pointField = (pointType == 0) ? "startPoint" : "endPoint";
-                ObjectNode point = objectMapper.createObjectNode();
-                point.put("x", newX);
-                point.put("y", newY);
-                edge.set(pointField, point);
-
-                // Recalculate bounding box
-                double sx = edge.path("startPoint").path("x").asDouble();
-                double sy = edge.path("startPoint").path("y").asDouble();
-                double ex = edge.path("endPoint").path("x").asDouble();
-                double ey = edge.path("endPoint").path("y").asDouble();
-
-                ObjectNode pos = objectMapper.createObjectNode();
-                pos.put("x", Math.min(sx, ex));
-                pos.put("y", Math.min(sy, ey));
-                edge.set("position", pos);
-
-                ObjectNode dim = objectMapper.createObjectNode();
-                dim.put("width", Math.max(15, Math.abs(ex - sx)));
-                dim.put("height", Math.max(15, Math.abs(ey - sy)));
-                edge.set("dimensions", dim);
             }
+        }
+
+        for (int i = 0; i < canvasArray.size(); i++) {
+            JsonNode item = canvasArray.get(i);
+            if (!"arrow".equals(item.path("type").asText()) && !"line".equals(item.path("type").asText())) continue;
+
+            ObjectNode edge = (ObjectNode) item;
+            String startAnchor = edge.path("startConnection").path("anchor").asText("");
+            String endAnchor = edge.path("endConnection").path("anchor").asText("");
+
+            String startNodeId = edge.path("startConnection").path("nodeId").asText("");
+            String endNodeId = edge.path("endConnection").path("nodeId").asText("");
+
+            JsonNode startNode = findNode(canvasArray, startNodeId);
+            JsonNode endNode = findNode(canvasArray, endNodeId);
+            if (startNode == null || endNode == null) continue;
+
+            double dx = edgeDx.getOrDefault(i, 0.0);
+            double dy = edgeDy.getOrDefault(i, 0.0);
+
+            ObjectNode startPt = objectMapper.createObjectNode();
+            startPt.put("x", getAnchorX(startNode, startAnchor, dx));
+            startPt.put("y", getAnchorY(startNode, startAnchor, dy));
+            edge.set("startPoint", startPt);
+
+            ObjectNode endPt = objectMapper.createObjectNode();
+            endPt.put("x", getAnchorX(endNode, endAnchor, dx));
+            endPt.put("y", getAnchorY(endNode, endAnchor, dy));
+            edge.set("endPoint", endPt);
+
+            double sx = startPt.path("x").asDouble();
+            double sy = startPt.path("y").asDouble();
+            double ex = endPt.path("x").asDouble();
+            double ey = endPt.path("y").asDouble();
+
+            ObjectNode pos = objectMapper.createObjectNode();
+            pos.put("x", Math.min(sx, ex));
+            pos.put("y", Math.min(sy, ey));
+            edge.set("position", pos);
+
+            ObjectNode dim = objectMapper.createObjectNode();
+            dim.put("width", Math.max(15, Math.abs(ex - sx)));
+            dim.put("height", Math.max(15, Math.abs(ey - sy)));
+            edge.set("dimensions", dim);
         }
 
         return canvasArray;
