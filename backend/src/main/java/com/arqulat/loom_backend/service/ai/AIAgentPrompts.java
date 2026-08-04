@@ -126,14 +126,14 @@ public class AIAgentPrompts {
             "DO NOT waste steps doing 1 operation at a time. Batch efficiently!\n\n" +
             "=== AVAILABLE TOOLS ===\n" +
             "add_node: { type, content, tag, x, y, width, height, backgroundColor, borderColor, textColor }\n" +
-            "  - type values: box, pill, diamond, cylinder, database, cloud, server, terminator\n" +
+            "  - type values: box, rectangle, pill, diamond, cylinder, database, cloud, server, terminator\n" +
             "  - SHAPE RULES:\n" +
             "    * Decision/Condition nodes MUST use type 'diamond'\n" +
             "    * Start/End nodes MUST use type 'pill'\n" +
-            "    * Process/Action nodes use type 'box' (standard rectangle)\n" +
+            "    * Process/Action nodes use type 'box' (or 'rectangle' for smaller 130x50 shapes)\n" +
             "  - content MUST be non-empty (the visible label text)\n" +
             "  - x, y are the top-left pixel position calculated from row/col\n" +
-            "  - Use width=160 and height=60 unless the layout plan specifies otherwise\n\n" +
+            "  - DIMENSIONS: Default is width=160, height=60. BUT for 'pill', 'terminator', and 'rectangle' use width=130, height=50\n\n" +
             "connect_nodes: { sourceId, targetId, label, lineStyle, arrowHead, routing }\n" +
             "  - sourceId: ID of the source node (use $$NEW_N$$ for newly created nodes)\n" +
             "  - targetId: ID of the target node\n" +
