@@ -1038,10 +1038,10 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
         if ((node.type === 'line' || node.type === 'arrow') && (node.startConnection?.nodeId === updatedNode.id || node.endConnection?.nodeId === updatedNode.id)) {
           const newNode = { ...node };
           if (node.startConnection?.nodeId === updatedNode.id) {
-            newNode.startPoint = getAnchorPoint(updatedNode, node.startConnection.anchor, node.endPoint);
+            newNode.startPoint = getAnchorPoint(updatedNode, node.startConnection.anchor, node.endPoint, node.startConnection.offset);
           }
           if (node.endConnection?.nodeId === updatedNode.id) {
-            newNode.endPoint = getAnchorPoint(updatedNode, node.endConnection.anchor, node.startPoint);
+            newNode.endPoint = getAnchorPoint(updatedNode, node.endConnection.anchor, node.startPoint, node.endConnection.offset);
           }
           const minX = Math.min(newNode.startPoint!.x, newNode.endPoint!.x);
           const minY = Math.min(newNode.startPoint!.y, newNode.endPoint!.y);
@@ -1104,10 +1104,10 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
           const movedNode = updatedNodes.find(n => n.id === id)!;
 
           if (node.startConnection?.nodeId === id) {
-            newNode.startPoint = getAnchorPoint(movedNode, node.startConnection.anchor, node.endPoint);
+            newNode.startPoint = getAnchorPoint(movedNode, node.startConnection.anchor, node.endPoint, node.startConnection.offset);
           }
           if (node.endConnection?.nodeId === id) {
-            newNode.endPoint = getAnchorPoint(movedNode, node.endConnection.anchor, node.startPoint);
+            newNode.endPoint = getAnchorPoint(movedNode, node.endConnection.anchor, node.startPoint, node.endConnection.offset);
           }
 
           // Recalculate bounding box for the line
@@ -1139,7 +1139,7 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const getAnchorPoint = (node: DiagramNode, anchor: 'top' | 'bottom' | 'left' | 'right' | 'closest' | 'start' | 'end', currentPoint?: { x: number; y: number }) => {
+  const getAnchorPoint = (node: DiagramNode, anchor: 'top' | 'bottom' | 'left' | 'right' | 'closest' | 'start' | 'end', currentPoint?: { x: number; y: number }, offsetPct: number = 50) => {
     if (node.type === 'line' || node.type === 'arrow') {
       if (anchor === 'start' && node.startPoint) return { ...node.startPoint };
       if (anchor === 'end' && node.endPoint) return { ...node.endPoint };
@@ -1147,11 +1147,14 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
     }
     const { x, y } = node.position;
     const { width, height } = node.dimensions;
+    const px = width * (offsetPct / 100);
+    const py = height * (offsetPct / 100);
+    
     switch (anchor) {
-      case 'top': return { x: x + width / 2, y };
-      case 'bottom': return { x: x + width / 2, y: y + height };
-      case 'left': return { x, y: y + height / 2 };
-      case 'right': return { x: x + width, y: y + height / 2 };
+      case 'top': return { x: x + px, y };
+      case 'bottom': return { x: x + px, y: y + height };
+      case 'left': return { x, y: y + py };
+      case 'right': return { x: x + width, y: y + py };
       case 'start': return { x: x + width / 2, y: y + height / 2 };
       case 'end': return { x: x + width / 2, y: y + height / 2 };
       case 'closest': {
@@ -1217,12 +1220,12 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
 
           if (node.startConnection && movedIds.includes(node.startConnection.nodeId)) {
             const connectedNode = updatedNodes.find(n => n.id === node.startConnection!.nodeId)!;
-            newNode.startPoint = getAnchorPoint(connectedNode, node.startConnection.anchor, node.endPoint);
+            newNode.startPoint = getAnchorPoint(connectedNode, node.startConnection.anchor, node.endPoint, node.startConnection.offset);
             needsUpdate = true;
           }
           if (node.endConnection && movedIds.includes(node.endConnection.nodeId)) {
             const connectedNode = updatedNodes.find(n => n.id === node.endConnection!.nodeId)!;
-            newNode.endPoint = getAnchorPoint(connectedNode, node.endConnection.anchor, node.startPoint);
+            newNode.endPoint = getAnchorPoint(connectedNode, node.endConnection.anchor, node.startPoint, node.endConnection.offset);
             needsUpdate = true;
           }
 

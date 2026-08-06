@@ -1281,64 +1281,119 @@ export function SidePanel() {
               <span className={styles.rowLabel}>Start Target</span>
               <select
                 className={styles.select}
-                value={node.startConnection ? `${node.startConnection.nodeId}:${node.startConnection.anchor}` : ''}
+                value={node.startConnection?.nodeId || ''}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (!val) {
                     updateNode({ ...node, startConnection: undefined });
                   } else {
-                    const [nodeId, anchor] = val.split(':');
-                    updateNode({ ...node, startConnection: { nodeId, anchor: anchor as any } });
+                    const targetNode = nodes.find(n => n.id === val);
+                    const defaultAnchor = targetNode && (targetNode.type === 'line' || targetNode.type === 'arrow') ? 'closest' : 'bottom';
+                    updateNode({ ...node, startConnection: { nodeId: val, anchor: node.startConnection?.anchor || defaultAnchor as any, offset: node.startConnection?.offset || 50 } });
                   }
                 }}
               >
                 <option value="">None (Floating)</option>
-                {nodes.filter(n => n.id !== node.id).flatMap(n => {
-                  if (n.type === 'line' || n.type === 'arrow') {
-                    return [
-                      <option key={`${n.id}:closest`} value={`${n.id}:closest`}>[Line] {n.id.substring(0,8)} (Closest)</option>,
-                      <option key={`${n.id}:start`} value={`${n.id}:start`}>[Line] {n.id.substring(0,8)} (Start)</option>,
-                      <option key={`${n.id}:end`} value={`${n.id}:end`}>[Line] {n.id.substring(0,8)} (End)</option>
-                    ];
-                  } else {
-                    return [
-                      <option key={`${n.id}:bottom`} value={`${n.id}:bottom`}>[{n.type}] {n.content || n.id.substring(0,8)}</option>
-                    ];
-                  }
-                })}
+                {nodes.filter(n => n.id !== node.id).map(n => (
+                  <option key={n.id} value={n.id}>[{n.type}] {n.content || n.id.substring(0,8)}</option>
+                ))}
               </select>
             </div>
+            {node.startConnection && nodes.find(n => n.id === node.startConnection?.nodeId && n.type !== 'line' && n.type !== 'arrow') && (
+              <>
+                <div className={styles.row}>
+                  <span className={styles.rowLabel}>Start Anchor</span>
+                  <select
+                    className={styles.select}
+                    value={node.startConnection.anchor}
+                    onChange={(e) => {
+                      updateNode({ ...node, startConnection: { ...node.startConnection!, anchor: e.target.value as any } });
+                    }}
+                  >
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="closest">Closest (Auto)</option>
+                  </select>
+                </div>
+                {node.startConnection.anchor !== 'closest' && (
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>Start Offset</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={node.startConnection.offset ?? 50}
+                      onChange={(e) => {
+                        updateNode({ ...node, startConnection: { ...node.startConnection!, offset: parseInt(e.target.value, 10) } });
+                      }}
+                      className={styles.slider}
+                    />
+                    <span className={styles.valueLabel}>{node.startConnection.offset ?? 50}%</span>
+                  </div>
+                )}
+              </>
+            )}
+
             <div className={styles.row}>
               <span className={styles.rowLabel}>End Target</span>
               <select
                 className={styles.select}
-                value={node.endConnection ? `${node.endConnection.nodeId}:${node.endConnection.anchor}` : ''}
+                value={node.endConnection?.nodeId || ''}
                 onChange={(e) => {
                   const val = e.target.value;
                   if (!val) {
                     updateNode({ ...node, endConnection: undefined });
                   } else {
-                    const [nodeId, anchor] = val.split(':');
-                    updateNode({ ...node, endConnection: { nodeId, anchor: anchor as any } });
+                    const targetNode = nodes.find(n => n.id === val);
+                    const defaultAnchor = targetNode && (targetNode.type === 'line' || targetNode.type === 'arrow') ? 'closest' : 'top';
+                    updateNode({ ...node, endConnection: { nodeId: val, anchor: node.endConnection?.anchor || defaultAnchor as any, offset: node.endConnection?.offset || 50 } });
                   }
                 }}
               >
                 <option value="">None (Floating)</option>
-                {nodes.filter(n => n.id !== node.id).flatMap(n => {
-                  if (n.type === 'line' || n.type === 'arrow') {
-                    return [
-                      <option key={`${n.id}:closest`} value={`${n.id}:closest`}>[Line] {n.id.substring(0,8)} (Closest)</option>,
-                      <option key={`${n.id}:start`} value={`${n.id}:start`}>[Line] {n.id.substring(0,8)} (Start)</option>,
-                      <option key={`${n.id}:end`} value={`${n.id}:end`}>[Line] {n.id.substring(0,8)} (End)</option>
-                    ];
-                  } else {
-                    return [
-                      <option key={`${n.id}:top`} value={`${n.id}:top`}>[{n.type}] {n.content || n.id.substring(0,8)}</option>
-                    ];
-                  }
-                })}
+                {nodes.filter(n => n.id !== node.id).map(n => (
+                  <option key={n.id} value={n.id}>[{n.type}] {n.content || n.id.substring(0,8)}</option>
+                ))}
               </select>
             </div>
+            {node.endConnection && nodes.find(n => n.id === node.endConnection?.nodeId && n.type !== 'line' && n.type !== 'arrow') && (
+              <>
+                <div className={styles.row}>
+                  <span className={styles.rowLabel}>End Anchor</span>
+                  <select
+                    className={styles.select}
+                    value={node.endConnection.anchor}
+                    onChange={(e) => {
+                      updateNode({ ...node, endConnection: { ...node.endConnection!, anchor: e.target.value as any } });
+                    }}
+                  >
+                    <option value="top">Top</option>
+                    <option value="bottom">Bottom</option>
+                    <option value="left">Left</option>
+                    <option value="right">Right</option>
+                    <option value="closest">Closest (Auto)</option>
+                  </select>
+                </div>
+                {node.endConnection.anchor !== 'closest' && (
+                  <div className={styles.row}>
+                    <span className={styles.rowLabel}>End Offset</span>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={node.endConnection.offset ?? 50}
+                      onChange={(e) => {
+                        updateNode({ ...node, endConnection: { ...node.endConnection!, offset: parseInt(e.target.value, 10) } });
+                      }}
+                      className={styles.slider}
+                    />
+                    <span className={styles.valueLabel}>{node.endConnection.offset ?? 50}%</span>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 

@@ -37,6 +37,7 @@ export interface Point {
 export interface Connection {
   nodeId: string;
   anchor: 'top' | 'bottom' | 'left' | 'right' | 'closest';
+  offset?: number; // 0 to 100 percentage. 50 is center.
 }
 
 export interface NodeSection {
