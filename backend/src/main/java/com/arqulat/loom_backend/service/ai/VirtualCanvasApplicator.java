@@ -657,15 +657,48 @@ public class VirtualCanvasApplicator {
             double dx = edgeDx.getOrDefault(i, 0.0);
             double dy = edgeDy.getOrDefault(i, 0.0);
 
+            double startX = getAnchorX(startNode, startAnchor, dx);
+            double startY = getAnchorY(startNode, startAnchor, dy);
+            double endX   = getAnchorX(endNode,   endAnchor,   dx);
+            double endY   = getAnchorY(endNode,   endAnchor,   dy);
+
             ObjectNode startPt = objectMapper.createObjectNode();
-            startPt.put("x", getAnchorX(startNode, startAnchor, dx));
-            startPt.put("y", getAnchorY(startNode, startAnchor, dy));
+            startPt.put("x", startX);
+            startPt.put("y", startY);
             edge.set("startPoint", startPt);
 
             ObjectNode endPt = objectMapper.createObjectNode();
-            endPt.put("x", getAnchorX(endNode, endAnchor, dx));
-            endPt.put("y", getAnchorY(endNode, endAnchor, dy));
+            endPt.put("x", endX);
+            endPt.put("y", endY);
             edge.set("endPoint", endPt);
+
+            // Write the computed offset back as a percentage into startConnection/endConnection
+            // so the properties panel reflects the actual spread position
+            ObjectNode startConn = (ObjectNode) edge.path("startConnection");
+            if (startConn != null && !startConn.isMissingNode()) {
+                double sw = startNode.path("dimensions").path("width").asDouble(160);
+                double sh = startNode.path("dimensions").path("height").asDouble(60);
+                double startOffsetPct;
+                if ("top".equals(startAnchor) || "bottom".equals(startAnchor)) {
+                    startOffsetPct = sw > 0 ? Math.max(0, Math.min(100, (startX - startNode.path("position").path("x").asDouble(0)) / sw * 100)) : 50;
+                } else {
+                    startOffsetPct = sh > 0 ? Math.max(0, Math.min(100, (startY - startNode.path("position").path("y").asDouble(0)) / sh * 100)) : 50;
+                }
+                startConn.put("offset", Math.round(startOffsetPct));
+            }
+
+            ObjectNode endConn = (ObjectNode) edge.path("endConnection");
+            if (endConn != null && !endConn.isMissingNode()) {
+                double ew = endNode.path("dimensions").path("width").asDouble(160);
+                double eh = endNode.path("dimensions").path("height").asDouble(60);
+                double endOffsetPct;
+                if ("top".equals(endAnchor) || "bottom".equals(endAnchor)) {
+                    endOffsetPct = ew > 0 ? Math.max(0, Math.min(100, (endX - endNode.path("position").path("x").asDouble(0)) / ew * 100)) : 50;
+                } else {
+                    endOffsetPct = eh > 0 ? Math.max(0, Math.min(100, (endY - endNode.path("position").path("y").asDouble(0)) / eh * 100)) : 50;
+                }
+                endConn.put("offset", Math.round(endOffsetPct));
+            }
 
             double sx = startPt.path("x").asDouble();
             double sy = startPt.path("y").asDouble();

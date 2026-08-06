@@ -300,7 +300,36 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
             if (mappedProjects.length > 0) {
               setActiveProjectId(mappedProjects[0].id);
               if (mappedProjects[0].files.length > 0) {
-                setActiveFileId(mappedProjects[0].files[0].id);
+                // Fetch the actual nodes for the first file instead of just setting the ID
+                const firstFileId = mappedProjects[0].files[0].id;
+                const firstProjectId = mappedProjects[0].id;
+                setActiveFileId(firstFileId);
+
+                // Explicitly load nodes for the first file
+                try {
+                  const arcApiUrl2 = (import.meta.env.VITE_ARC_API_URL || 'http://localhost:8081').replace(/\/$/, '');
+                  const fileResp = await fetch(`${arcApiUrl2}/api/files/${firstFileId}`, { credentials: 'include' });
+                  if (fileResp.ok) {
+                    const fileData = await fileResp.json();
+                    let firstFileNodes: DiagramNode[] = [];
+                    if (fileData.nodes) {
+                      try {
+                        const parsed = typeof fileData.nodes === 'string' ? JSON.parse(fileData.nodes) : fileData.nodes;
+                        firstFileNodes = Array.isArray(parsed) ? parsed : [];
+                      } catch (e) { firstFileNodes = []; }
+                    }
+                    lastSavedNodesStr.current = JSON.stringify(firstFileNodes);
+                    setNodesState(firstFileNodes);
+                    setProjects(prev => prev.map(p => {
+                      if (p.id === firstProjectId) {
+                        return { ...p, files: p.files.map(f => f.id === firstFileId ? { ...f, nodes: firstFileNodes } : f) };
+                      }
+                      return p;
+                    }));
+                  }
+                } catch (e) {
+                  console.error('Failed to load initial file nodes:', e);
+                }
               }
             }
           }
