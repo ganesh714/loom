@@ -1030,7 +1030,34 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
       saveHistoryState(nodes);
     }
     setNodes((prev) => {
-      const nextNodes = prev.map(node => node.id === updatedNode.id ? updatedNode : node);
+      let finalUpdatedNode = { ...updatedNode };
+      
+      // If the updated node is a line itself (e.g. from properties panel), recalculate its own points
+      if (finalUpdatedNode.type === 'line' || finalUpdatedNode.type === 'arrow') {
+        if (finalUpdatedNode.startConnection) {
+          const connectedNode = prev.find(n => n.id === finalUpdatedNode.startConnection!.nodeId);
+          if (connectedNode) {
+            finalUpdatedNode.startPoint = getAnchorPoint(connectedNode, finalUpdatedNode.startConnection.anchor, finalUpdatedNode.endPoint, finalUpdatedNode.startConnection.offset);
+          }
+        }
+        if (finalUpdatedNode.endConnection) {
+          const connectedNode = prev.find(n => n.id === finalUpdatedNode.endConnection!.nodeId);
+          if (connectedNode) {
+            finalUpdatedNode.endPoint = getAnchorPoint(connectedNode, finalUpdatedNode.endConnection.anchor, finalUpdatedNode.startPoint, finalUpdatedNode.endConnection.offset);
+          }
+        }
+        if (finalUpdatedNode.startPoint && finalUpdatedNode.endPoint) {
+          const minX = Math.min(finalUpdatedNode.startPoint.x, finalUpdatedNode.endPoint.x);
+          const minY = Math.min(finalUpdatedNode.startPoint.y, finalUpdatedNode.endPoint.y);
+          finalUpdatedNode.position = { x: minX, y: minY };
+          finalUpdatedNode.dimensions = { 
+            width: Math.max(15, Math.abs(finalUpdatedNode.endPoint.x - finalUpdatedNode.startPoint.x)),
+            height: Math.max(15, Math.abs(finalUpdatedNode.endPoint.y - finalUpdatedNode.startPoint.y))
+          };
+        }
+      }
+
+      const nextNodes = prev.map(node => node.id === finalUpdatedNode.id ? finalUpdatedNode : node);
       let finalNodes = [...nextNodes];
       let didCascade = false;
       for (let i = 0; i < finalNodes.length; i++) {
