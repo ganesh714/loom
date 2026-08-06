@@ -329,10 +329,8 @@ public class VirtualCanvasApplicator {
                         edge.put("arrowTail", args.path("arrowTail").asText("none"));
                         edge.put("routing", args.path("routing").asText("elbow"));
 
-                        String[] edgeColors = { "#1976D2", "#388E3C", "#D32F2F", "#FBC02D", "#8E24AA", "#F57C00", "#0097A7", "#455A64" };
-                        String randomColor = edgeColors[new java.util.Random().nextInt(edgeColors.length)];
                         ObjectNode styleNode = objectMapper.createObjectNode();
-                        styleNode.put("borderColor", randomColor);
+                        styleNode.put("borderColor", "#455A64"); // Uniform blue-grey color
                         edge.set("style", styleNode);
 
                         canvasArray.add(edge);

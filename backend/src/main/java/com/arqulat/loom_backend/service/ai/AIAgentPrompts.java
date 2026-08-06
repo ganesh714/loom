@@ -170,6 +170,7 @@ public class AIAgentPrompts {
                         "  - SHAPE RULES:\n" +
                         "    * Decision/Condition nodes MUST use type 'diamond'\n" +
                         "    * Start/End nodes MUST use type 'pill'\n" +
+                        "    * Database/Storage nodes MUST use type 'database'\n" +
                         "    * Process/Action nodes use type 'box' (or 'rectangle' for smaller 130x50 shapes)\n" +
                         "  - content MUST be non-empty (the visible label text)\n" +
                         "  - x, y are the top-left pixel position calculated from row/col\n" +
