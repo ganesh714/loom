@@ -1,6 +1,6 @@
 # Error Handling
 
-Loom uses a highly standardized error response format driven by a centralized `@ControllerAdvice` named `GlobalExceptionHandler`. 
+Arqulat Arc uses a standardized error response format driven by a centralized `@ControllerAdvice` named `GlobalExceptionHandler`.
 
 Instead of allowing Java runtime exceptions to bubble up to the client as messy HTML `500 Internal Server Error` pages, the backend intercepts business exceptions and maps them to appropriate HTTP status codes with a consistent JSON payload.
 

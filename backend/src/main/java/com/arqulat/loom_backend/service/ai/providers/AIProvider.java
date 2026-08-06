@@ -21,6 +21,30 @@ public interface AIProvider {
     String edit(String prompt, String contextNodes, String imageBase64) throws Exception;
 
     /**
+     * Executes an agent turn with function calling (strict JSON output).
+     * Used for Pass 3 of the agent loop where output must be tool calls.
+     * @param prompt The user prompt
+     * @param systemPrompt The system prompt
+     * @param contextNodes The canvas context
+     * @return The JSON string of tool calls
+     * @throws Exception if generation fails
+     */
+    String agentCall(String prompt, String systemPrompt, String contextNodes) throws Exception;
+
+    /**
+     * Free-form agent call — no JSON schema enforcement.
+     * Used for Pass 1 (semantic) and Pass 2 (layout) where the LLM should
+     * think freely in natural language and output a <RESULT>...</RESULT> block.
+     * Works on medium-tier models because there's no schema constraint.
+     *
+     * @param prompt The user prompt with context
+     * @param systemPrompt The system instructions
+     * @return Raw text response (caller extracts <RESULT> block)
+     * @throws Exception if generation fails
+     */
+    String agentFreeCall(String prompt, String systemPrompt) throws Exception;
+
+    /**
      * @return The name of this provider for logging/response tracking.
      */
     String getProviderName();

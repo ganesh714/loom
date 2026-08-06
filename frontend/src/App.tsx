@@ -17,6 +17,22 @@ import { useAuth } from '@/context/AuthContext';
 import { Loader } from '@/components/ui/Loader';
 import { Logo } from '@/components/ui/Logo';
 import { CreateEntityModal } from '@/components/layout/CreateEntityModal';
+import type { WorkspaceProject as Project } from '@/context/DiagramContext';
+
+function getNewFileName(projects: Project[], activeProjectId: string | null) {
+  const activeProj = projects.find(p => p.id === activeProjectId);
+  if (!activeProj || !activeProj.files || activeProj.files.length === 0) return 'Untitled 1';
+  
+  let max = 0;
+  for (const f of activeProj.files) {
+    const match = f.name.match(/^Untitled (\d+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > max) max = num;
+    }
+  }
+  return `Untitled ${max + 1}`;
+}
 
 function WorkspaceRoute() {
   const { projectId, fileId } = useParams();
@@ -41,6 +57,17 @@ function WorkspaceRoute() {
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement>(null);
+
+  const handleTabClick = (tab: 'files' | 'layers' | 'shapes' | 'templates' | 'settings') => {
+    if (activeLeftTab === tab && isLeftSidebarPinned) {
+      setIsLeftSidebarPinned(false);
+      setIsLeftSidebarHovered(false);
+    } else {
+      setIsLeftSidebarPinned(true);
+      setIsLeftSidebarHovered(true);
+      setActiveLeftTab(tab);
+    }
+  };
 
   useEffect(() => {
     if (!isProfileMenuOpen) return;
@@ -188,10 +215,7 @@ function WorkspaceRoute() {
                   setIsLeftSidebarHovered(true);
                   setActiveLeftTab('files');
                 }}
-                onClick={() => {
-                  setIsLeftSidebarHovered(true);
-                  setActiveLeftTab('files');
-                }}
+                onClick={() => handleTabClick('files')}
                 style={{
                   color: (activeLeftTab === 'files' && (isLeftSidebarPinned || isLeftSidebarHovered)) ? '#0c8ce9' : 'var(--text-secondary)',
                   padding: '8px',
@@ -232,10 +256,7 @@ function WorkspaceRoute() {
                   setIsLeftSidebarHovered(true);
                   setActiveLeftTab('layers');
                 }}
-                onClick={() => {
-                  setIsLeftSidebarHovered(true);
-                  setActiveLeftTab('layers');
-                }}
+                onClick={() => handleTabClick('layers')}
                 style={{
                   color: (activeLeftTab === 'layers' && (isLeftSidebarPinned || isLeftSidebarHovered)) ? '#0c8ce9' : 'var(--text-secondary)',
                   padding: '8px',
@@ -276,10 +297,7 @@ function WorkspaceRoute() {
                   setIsLeftSidebarHovered(true);
                   setActiveLeftTab('shapes');
                 }}
-                onClick={() => {
-                  setIsLeftSidebarHovered(true);
-                  setActiveLeftTab('shapes');
-                }}
+                onClick={() => handleTabClick('shapes')}
                 style={{
                   color: (activeLeftTab === 'shapes' && (isLeftSidebarPinned || isLeftSidebarHovered)) ? '#0c8ce9' : 'var(--text-secondary)',
                   padding: '8px',
@@ -320,10 +338,7 @@ function WorkspaceRoute() {
                   setIsLeftSidebarHovered(true);
                   setActiveLeftTab('templates');
                 }}
-                onClick={() => {
-                  setIsLeftSidebarHovered(true);
-                  setActiveLeftTab('templates');
-                }}
+                onClick={() => handleTabClick('templates')}
                 style={{
                   color: (activeLeftTab === 'templates' && (isLeftSidebarPinned || isLeftSidebarHovered)) ? '#0c8ce9' : 'var(--text-secondary)',
                   padding: '8px',
@@ -364,10 +379,7 @@ function WorkspaceRoute() {
                   setIsLeftSidebarHovered(true);
                   setActiveLeftTab('settings');
                 }}
-                onClick={() => {
-                  setIsLeftSidebarHovered(true);
-                  setActiveLeftTab('settings');
-                }}
+                onClick={() => handleTabClick('settings')}
                 style={{
                   color: (activeLeftTab === 'settings' && (isLeftSidebarPinned || isLeftSidebarHovered)) ? '#0c8ce9' : 'var(--text-secondary)',
                   padding: '8px',
@@ -707,7 +719,7 @@ function WorkspaceRoute() {
           }
         }}
         title="Create New File"
-        defaultName={`Untitled ${projects.find(p => p.id === activeProjectId)?.files.length ? projects.find(p => p.id === activeProjectId)!.files.length + 1 : 1}`}
+        defaultName={getNewFileName(projects, activeProjectId)}
       />
 
       <CommandPalette 

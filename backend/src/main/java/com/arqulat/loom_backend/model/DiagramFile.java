@@ -1,6 +1,8 @@
 package com.arqulat.loom_backend.model;
 
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.JdbcTypeCode;
@@ -18,6 +20,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -62,6 +66,10 @@ public class DiagramFile {
     @JoinColumn(name = "project_id", nullable = false)
     @JsonIgnore
     private Project project;
+
+    @OneToMany(mappedBy = "diagramFile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<DiagramFileVersion> versions = new ArrayList<>();
 
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)

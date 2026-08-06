@@ -1,6 +1,6 @@
 # Configuration Reference
 
-The Loom backend is configured via `application.properties` and environment variables. This file serves as the source of truth for all database connections, limits, and security settings.
+The Arqulat Arc backend is configured via `application.properties` and environment variables. This file is the source of truth for database connections, limits, and security settings.
 
 ## Environment Variables & Properties
 
@@ -9,7 +9,7 @@ The application relies on a `.env` file (or injected system environment variable
 | Property Name | Env Variable | Default Value | Description |
 |---|---|---|---|
 | `server.port` | `PORT` | `8081` | The port the Tomcat server binds to. Set to 8081 to avoid clashing with `arqulat_auth` on 8080. |
-| `spring.datasource.url` | `DATABASE_URL` | Supabase JDBC string | The PostgreSQL connection string. Must point to the shared Supabase DB. |
+| `spring.datasource.url` | `DATABASE_URL` | Supabase JDBC string | The PostgreSQL connection string. Must point to the shared Supabase database. |
 | `spring.datasource.username` | `DATABASE_USERNAME` | `postgres` | Database username. |
 | `spring.datasource.password` | `DATABASE_PASSWORD` | *(none)* | **Required.** The database password. |
 | `application.security.jwt.secret-key` | `JWT_SECRET` | *(none)* | **Required.** The cryptographic secret used to verify incoming JWTs. Must EXACTLY match the secret used by `arqulat_auth`. |
@@ -23,11 +23,11 @@ The following static configurations are hardcoded into `application.properties` 
 ### Flyway Migrations
 ```properties
 spring.flyway.enabled=true
-spring.flyway.schemas=loom
-spring.flyway.default-schema=loom
-spring.jpa.hibernate.ddl-auto=validate
+spring.flyway.schemas=arc
+spring.flyway.default-schema=arc
+spring.jpa.hibernate.ddl-auto=update
 ```
-These settings guarantee that Hibernate will **never** alter the database schema autonomously. Instead, Flyway executes SQL migration scripts (`V1__init_schema.sql`) and Hibernate simply validates that the entities match the physical tables.
+Flyway initializes and maintains the `arc` schema, while Hibernate updates the mapped schema at runtime.
 
 ### Payload Size Limits
 ```properties
@@ -38,7 +38,7 @@ To prevent memory exhaustion attacks or database bloat from excessively massive 
 
 ## Local `.env` Template
 
-Create a `.env` file in the `loom/backend` root directory for local development:
+Create a `.env` file in the `backend` root directory for local development:
 
 ```properties
 DATABASE_URL=jdbc:postgresql://<your-supabase-id>.supabase.co:5432/postgres?currentSchema=public

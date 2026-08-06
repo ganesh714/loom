@@ -321,15 +321,21 @@
 }
 
 .modeBtnActive {
-  background: rgba(12, 140, 233, 0.1);
-  border-color: var(--accent-blue);
-  color: var(--accent-blue);
+  background: rgba(12, 140, 233, 0.15);
+  color: #0c8ce9;
+  border-color: rgba(12, 140, 233, 0.3);
 }
 
 .modeBtnEditActive {
-  background: rgba(16, 185, 129, 0.1);
-  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
   color: #10b981;
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+.modeBtnAgentActive {
+  background: rgba(139, 92, 246, 0.15);
+  color: #8b5cf6;
+  border-color: rgba(139, 92, 246, 0.3);
 }
 
 .inputContainer {

@@ -1,35 +1,30 @@
-# Loom — Backend Documentation
+# Arqulat Arc Backend Documentation
 
-> **Version:** 0.0.1-SNAPSHOT  
-> **Framework:** Spring Boot 3.x · Java 17  
-> **Database:** PostgreSQL (Supabase-hosted, `loom` schema)  
+> **Version:** 0.0.1-SNAPSHOT
+> **Framework:** Spring Boot 3.2.6 · Java 17
+> **Database:** PostgreSQL (Supabase-hosted, `arc` schema)
 
----
-
-## 📚 Documentation Index
+## Documentation Index
 
 | Document | Description |
 |---|---|
-| [Architecture Overview](./architecture/overview.md) | High-level stateless system design, low-level JSONB analysis, and data flow execution paths |
-| [Project Structure](./architecture/project-structure.md) | Annotated file tree outlining controllers, services, repositories, and exception boundaries |
-| [API Reference](./api/endpoints.md) | Every endpoint with request/response schemas, updated with embedded DTOs and 409 Conflicts |
-| [Error Handling](./api/error-handling.md) | How the `GlobalExceptionHandler` intercepts exceptions and maps them to HTTP status codes |
-| [Database Schema](./database/schema.md) | JSONB column structure, `user_id` foreign keys, indexes, and Flyway migration strategy |
-| [Configuration Reference](./config/reference.md) | Environment variables, `.env` templates, database URLs, and payload size safety limits |
-| [Security Architecture](./security/architecture.md) | Filter chain analysis, JWT cryptographic signature verification, and native JDBC blacklists |
-| [Known Issues & TODOs](./known-issues.md) | Tracked issues organized by severity and historical resolution log |
-
----
+| [Architecture Overview](./architecture/overview.md) | Stateless API design, canvas storage, and request flow |
+| [Project Structure](./architecture/project-structure.md) | Layered package layout and code ownership boundaries |
+| [API Reference](./api/endpoints.md) | Project and diagram file endpoints |
+| [Error Handling](./api/error-handling.md) | Standard JSON errors and HTTP status mapping |
+| [Database Schema](./database/schema.md) | `projects`, `diagram_files`, and blacklist storage |
+| [Configuration Reference](./config/reference.md) | Environment variables and Spring properties |
+| [Security Architecture](./security/architecture.md) | JWT validation, session cookies, and blacklist checks |
+| [Known Issues & TODOs](./known-issues.md) | Open issues and historical notes |
 
 ## Quick Start
 
 ```bash
-# 1. Run the arqulat_auth backend (Loom relies on it for Auth)
-# Ensure arqulat_auth is running on port 8080
+# 1. Start arqulat_auth on port 8080
 
-# 2. Run the Loom backend
-cd loom/backend
+# 2. Start the Arc backend
+cd backend
 ./mvnw spring-boot:run
 ```
 
-Server starts on **http://localhost:8081**.
+The API runs on **http://localhost:8081** by default.

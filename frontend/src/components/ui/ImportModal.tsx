@@ -4,6 +4,7 @@ import styles from './ImportModal.module.css';
 import { Button } from './button';
 import { useDiagram } from '@/context/DiagramContext';
 import { autoLayoutNodes } from '@/utils/layoutEngine';
+import { parseMermaid } from '@/utils/mermaidParser';
 
 interface ImportModalProps {
   isOpen: boolean;
@@ -12,13 +13,14 @@ interface ImportModalProps {
 
 export function ImportModal({ isOpen, onClose }: ImportModalProps) {
   const { nodes, setNodes, saveHistoryState } = useDiagram();
-  const [activeTab, setActiveTab] = useState<'file' | 'code'>('file');
+  const [activeTab, setActiveTab] = useState<'file' | 'code' | 'mermaid'>('file');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [successMsg, setSuccessMsg] = useState<string>('');
   const [dragActive, setDragActive] = useState<boolean>(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [parsedNodes, setParsedNodes] = useState<any[] | null>(null);
   const [codeText, setCodeText] = useState<string>('');
+  const [mermaidText, setMermaidText] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -30,12 +32,19 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
     setSelectedFile(null);
     setParsedNodes(null);
     setCodeText('');
+    setMermaidText('');
     onClose();
   };
 
   const processImportData = (content: string): any[] | null => {
     try {
-      const parsedData = JSON.parse(content);
+      let parsedData = JSON.parse(content);
+      
+      // Support object wrapper like { version: "1.0", nodes: [...] } from VS Code Extension
+      if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData) && Array.isArray(parsedData.nodes)) {
+        parsedData = parsedData.nodes;
+      }
+
       if (!Array.isArray(parsedData)) {
         setErrorMsg('Invalid format: The diagram data must be a JSON array of nodes.');
         return null;
@@ -53,10 +62,12 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
           setErrorMsg('Invalid format: Each node must have a string "id" and "type".');
           return null;
         }
-        if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
-          if (node.type !== 'arrow' && node.type !== 'line' && node.type !== 'custom-connector') {
+        if (node.type === 'arrow' || node.type === 'line' || node.type === 'custom-connector') {
+          if (!node.startPoint || !node.endPoint) {
             needsAutoLayout = true;
           }
+        } else if (!node.position || typeof node.position.x !== 'number' || typeof node.position.y !== 'number') {
+          needsAutoLayout = true;
         }
       }
 
@@ -137,11 +148,18 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
         setNodes(parsedNodes);
         handleClose();
       }
-    } else {
+    } else if (activeTab === 'code') {
       const nodesData = processImportData(codeText);
       if (nodesData) {
         saveHistoryState(nodes);
         setNodes(nodesData);
+        handleClose();
+      }
+    } else if (activeTab === 'mermaid') {
+      const parsedData = parseMermaid(mermaidText);
+      if (parsedData && parsedData.length > 0) {
+        saveHistoryState(nodes);
+        setNodes(parsedData);
         handleClose();
       }
     }
@@ -158,16 +176,46 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
     }
 
     try {
-      const parsedData = JSON.parse(text);
+      let parsedData = JSON.parse(text);
+      if (parsedData && typeof parsedData === 'object' && !Array.isArray(parsedData) && Array.isArray(parsedData.nodes)) {
+        parsedData = parsedData.nodes;
+      }
+
       if (Array.isArray(parsedData)) {
         setSuccessMsg('Valid JSON AST array! Ready to import.');
       } else {
         setErrorMsg('Warning: Data must be a JSON array of nodes.');
       }
     } catch (err) {
-      // Don't show parse errors typing midway unless they stop or click import,
-      // but let's show visual warning if there is a syntax error
       setErrorMsg('Invalid JSON syntax...');
+    }
+  };
+
+  const handleMermaidChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    const text = e.target.value;
+    setMermaidText(text);
+    setErrorMsg('');
+    setSuccessMsg('');
+
+    if (text.trim() === '') {
+      return;
+    }
+
+    try {
+      const parsedData = parseMermaid(text);
+      if (parsedData && parsedData.length > 0) {
+        const nodesCount = parsedData.filter(n => n.type !== 'line' && n.type !== 'arrow').length;
+        const edgesCount = parsedData.filter(n => n.type === 'line' || n.type === 'arrow').length;
+        setSuccessMsg(`Valid Mermaid! Found ${nodesCount} nodes and ${edgesCount} edges.`);
+      } else {
+        setErrorMsg('Could not find any valid nodes in the Mermaid code.');
+      }
+    } catch (err: any) {
+      if (err.message && err.message.includes('not supported')) {
+        setErrorMsg(err.message);
+      } else {
+        setErrorMsg('Error parsing Mermaid code.');
+      }
     }
   };
 
@@ -196,7 +244,17 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
               setSuccessMsg('');
             }}
           >
-            Code Input
+            JSON Input
+          </Button>
+          <Button
+            variant={activeTab === 'mermaid' ? 'default' : 'outline'}
+            onClick={() => {
+              setActiveTab('mermaid');
+              setErrorMsg('');
+              setSuccessMsg('');
+            }}
+          >
+            Mermaid Input
           </Button>
         </div>
 
@@ -270,6 +328,20 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
           </div>
         )}
 
+        {activeTab === 'mermaid' && (
+          <div className={styles.section}>
+            <div className={styles.textareaContainer}>
+              <textarea
+                className={styles.textarea}
+                placeholder={`graph TD\n  A[Start] --> B{Decision}\n  B -->|Yes| C[Process]\n  B -->|No| D[End]\n  C --> D`}
+                value={mermaidText}
+                onChange={handleMermaidChange}
+                style={{ fontFamily: 'monospace', fontSize: '14px' }}
+              />
+            </div>
+          </div>
+        )}
+
         {errorMsg && (
           <div className={styles.errorBanner} style={{ marginTop: '16px' }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -298,7 +370,11 @@ export function ImportModal({ isOpen, onClose }: ImportModalProps) {
           <Button
             variant="default"
             onClick={executeImport}
-            disabled={activeTab === 'file' ? !parsedNodes : (!codeText.trim() || !!errorMsg.includes('syntax'))}
+            disabled={
+              (activeTab === 'file' && !parsedNodes) ||
+              (activeTab === 'code' && (!codeText.trim() || !!errorMsg.includes('syntax'))) ||
+              (activeTab === 'mermaid' && (!mermaidText.trim() || !!errorMsg))
+            }
           >
             Import Diagram
           </Button>

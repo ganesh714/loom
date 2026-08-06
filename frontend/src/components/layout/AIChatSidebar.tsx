@@ -3,6 +3,7 @@ import { X, Send, Sparkles, ChevronDown, Mic, MicOff, Bot, Edit3, ImagePlus } fr
 import styles from './AIChatSidebar.module.css';
 import { useDiagram } from '@/context/DiagramContext';
 import { autoLayoutNodes } from '../../utils/layoutEngine';
+import { autoFixCollisions, detectCollisions } from '../../utils/collisionDetector';
 
 const MODELS = [
   'Arc GPT-4',
@@ -18,18 +19,68 @@ interface ChatMessage {
   isError?: boolean;
 }
 
+const CollapsibleMessage = ({ msg }: { msg: ChatMessage }) => {
+  const [expanded, setExpanded] = useState(false);
+  const lines = msg.content.split('\n');
+  const isLarge = lines.length > 5 || msg.content.length > 250;
+
+  if (!isLarge || msg.role === 'user') {
+    return (
+      <>
+        {lines.map((line, i) => (
+          <div key={i}>{line}</div>
+        ))}
+      </>
+    );
+  }
+
+  return (
+    <div>
+      {expanded ? (
+        <>
+          {lines.map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+          <button 
+            onClick={() => setExpanded(false)}
+            style={{ background: 'none', border: 'none', color: '#0c8ce9', padding: '8px 0 0 0', cursor: 'pointer', fontSize: '12px', width: '100%', textAlign: 'center', fontWeight: 600 }}
+          >
+            Show Less
+          </button>
+        </>
+      ) : (
+        <>
+          {lines.slice(0, 3).map((line, i) => (
+            <div key={i}>{line}</div>
+          ))}
+          <div style={{ color: '#888', fontStyle: 'italic', fontSize: '12px', marginTop: '4px' }}>...</div>
+          <button 
+            onClick={() => setExpanded(true)}
+            style={{ background: 'none', border: 'none', color: '#0c8ce9', padding: '8px 0 0 0', cursor: 'pointer', fontSize: '12px', width: '100%', textAlign: 'center', fontWeight: 600 }}
+          >
+            Show More
+          </button>
+        </>
+      )}
+    </div>
+  );
+};
+
 export function AIChatSidebar() {
-  const { toggleAiChat, activeProjectId, addFile, setNodes, nodes, projects, selectedNodeIds, saveHistoryState, zoom, panOffset } = useDiagram();
+  const { toggleAiChat, activeProjectId, addFile, setNodes, nodes, projects, selectedNodeIds, saveHistoryState, zoom, panOffset, undo } = useDiagram();
   const [input, setInput] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [aiPhase, setAiPhase] = useState<'idle' | 'planning' | 'styling' | 'editing'>('idle');
+  const [aiPhase, setAiPhase] = useState<'idle' | 'planning' | 'styling' | 'editing' | 'executing'>('idle');
   const [selectedModel, setSelectedModel] = useState(MODELS[0]);
   const [isModelDropdownOpen, setIsModelDropdownOpen] = useState(false);
-  const [aiMode, setAiMode] = useState<'generate' | 'edit'>('generate');
+  const [aiMode, setAiMode] = useState<'generate' | 'edit' | 'agent'>('generate');
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   
+  const [showCollisionAction, setShowCollisionAction] = useState(false);
+  const [canUndoCollision, setCanUndoCollision] = useState(false);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -96,7 +147,7 @@ export function AIChatSidebar() {
     const promptText = input.trim();
     setInput('');
     setIsGenerating(true);
-    setAiPhase(aiMode === 'generate' ? 'planning' : 'editing');
+    setAiPhase(aiMode === 'generate' ? 'planning' : aiMode === 'agent' ? 'executing' : 'editing');
     
     setMessages(prev => [...prev, { id: Date.now().toString(), role: 'user', content: promptText }]);
     
@@ -112,7 +163,163 @@ export function AIChatSidebar() {
       const fullPrompt = messages.length > 0 ? `PREVIOUS CHAT HISTORY:\\n${chatContextStr}\\n\\nCURRENT REQUEST:\\n${promptText}` : promptText;
       
       let response: Response;
-      if (aiMode === 'generate') {
+      if (aiMode === 'agent') {
+        // ─── Agent Mode: SSE Streaming ───
+        const contextPayload = nodes.map(n => ({
+          id: n.id, type: n.type, position: n.position, dimensions: n.dimensions, content: n.content,
+          style: n.style, startConnection: n.startConnection, endConnection: n.endConnection,
+          label: n.label, lineStyle: n.lineStyle, arrowHead: n.arrowHead, routing: n.routing
+        }));
+
+        saveHistoryState(nodes);
+
+        try {
+          const sseResponse = await fetch(`${arcApiUrl}/api/ai/agent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ prompt: fullPrompt, contextNodes: JSON.stringify(contextPayload) }),
+          });
+
+          if (!sseResponse.ok) {
+            throw new Error(`Server returned ${sseResponse.status}: ${await sseResponse.text()}`);
+          }
+
+          const reader = sseResponse.body?.getReader();
+          if (!reader) throw new Error('No response body');
+          const decoder = new TextDecoder();
+          let buffer = '';
+
+          const processEvent = (eventName: string, eventData: string) => {
+            try {
+              const data = JSON.parse(eventData);
+
+              if (eventName === 'progress' || data.type === 'progress') {
+                const phaseMap: Record<string, string> = {
+                  'semantic': '🧠 Analyzing entities and relationships...',
+                  'layout': '📐 Choosing layout structure...',
+                };
+                const msg = phaseMap[data.step] || data.message || 'Processing...';
+                setAiPhase(data.phase === 'planning' ? 'planning' : 'executing');
+                setMessages(prev => {
+                  const existing = prev.find(m => m.id === 'agent-progress');
+                  if (existing) {
+                    return prev.map(m => m.id === 'agent-progress' ? { ...m, content: msg } : m);
+                  }
+                  return [...prev, { id: 'agent-progress', role: 'ai' as const, content: msg }];
+                });
+              }
+              else if (eventName === 'plan' || data.type === 'plan') {
+                const planTypeStr = data.planType === 'semantic' ? 'Semantic Analysis' : 'Layout Strategy';
+                const planMsg = `📝 **${planTypeStr} Completed:**\n\`\`\`json\n${data.result}\n\`\`\``;
+                setMessages(prev => {
+                  const progressMsg = prev.find(m => m.id === 'agent-progress');
+                  const filtered = prev.filter(m => m.id !== 'agent-progress');
+                  const newMsgs = [...filtered, { id: 'agent-plan-' + data.planType, role: 'ai' as const, content: planMsg }];
+                  if (progressMsg) {
+                    newMsgs.push(progressMsg);
+                  }
+                  return newMsgs;
+                });
+              }
+              else if (eventName === 'step' || data.type === 'step') {
+                setAiPhase('executing');
+                const stepMsg = `⚡ Step ${data.step}/${data.maxSteps}: ${data.explanation} (${data.toolCallsApplied} operations)`;
+                setMessages(prev => {
+                  const filtered = prev.filter(m => m.id !== 'agent-progress');
+                  return [...filtered, { id: 'agent-step-' + data.step, role: 'ai' as const, content: stepMsg }];
+                });
+
+                // Live canvas preview update
+                if (data.currentCanvas && Array.isArray(data.currentCanvas)) {
+                  setNodes(data.currentCanvas as any);
+                }
+              }
+              else if (eventName === 'done' || data.type === 'done') {
+                // Final commit
+                if (data.finalNodes && Array.isArray(data.finalNodes)) {
+                  // Do not auto fix collisions anymore, give user the choice
+                  setNodes(data.finalNodes as any);
+
+                  const report = detectCollisions(data.finalNodes as any);
+                  const hasCollisions = report.nodeOverlaps.length > 0 || report.lineIntersections.length > 0;
+                  
+                  if (hasCollisions) {
+                    setShowCollisionAction(true);
+                    setCanUndoCollision(false);
+                  }
+
+                  const fixMsg = hasCollisions ? ` ⚠️ Collisions detected.` : '';
+                  const doneMsg = `✅ ${data.summary || 'Agent completed.'}${fixMsg}`;
+                  setMessages(prev => {
+                    const filtered = prev.filter(m => m.id !== 'agent-progress');
+                    return [...filtered, { id: Date.now().toString(), role: 'ai' as const, content: doneMsg }];
+                  });
+                }
+                setIsGenerating(false);
+                setAiPhase('idle');
+                setSelectedImage(null);
+              }
+              else if (eventName === 'error' || data.type === 'error') {
+                // Keep partial canvas if available
+                if (data.partialCanvas && Array.isArray(data.partialCanvas)) {
+                  setNodes(data.partialCanvas as any);
+                }
+                setMessages(prev => {
+                  const filtered = prev.filter(m => m.id !== 'agent-progress');
+                  return [...filtered, { id: Date.now().toString(), role: 'ai' as const, content: `❌ Agent error: ${data.message}`, isError: true }];
+                });
+                setIsGenerating(false);
+                setAiPhase('idle');
+              }
+            } catch (e) {
+              console.error('Failed to process SSE event:', eventName, eventData, e);
+            }
+          };
+
+          // Read SSE stream
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+
+            // Parse SSE events from buffer
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || ''; // Keep incomplete line in buffer
+
+            let currentEventName = '';
+            let currentEventData = '';
+
+            for (const line of lines) {
+              if (line.startsWith('event:')) {
+                currentEventName = line.substring(6).trim();
+              } else if (line.startsWith('data:')) {
+                currentEventData = line.substring(5).trim();
+              } else if (line.trim() === '' && currentEventData) {
+                processEvent(currentEventName, currentEventData);
+                currentEventName = '';
+                currentEventData = '';
+              }
+            }
+          }
+
+          // Process any remaining data
+          if (buffer.trim()) {
+            const remaining = buffer.trim();
+            if (remaining.startsWith('data:')) {
+              processEvent('', remaining.substring(5).trim());
+            }
+          }
+
+        } catch (e: any) {
+          setMessages(prev => [...prev, { id: Date.now().toString(), role: 'ai', content: `❌ Agent failed: ${e.message}`, isError: true }]);
+        } finally {
+          setIsGenerating(false);
+          setAiPhase('idle');
+          setSelectedImage(null);
+        }
+        return; // Agent mode handled completely via SSE
+      } else if (aiMode === 'generate') {
         response = await fetch(`${arcApiUrl}/api/ai/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -177,6 +384,7 @@ export function AIChatSidebar() {
           const parsed = typeof data.jsonTree === 'string' ? JSON.parse(data.jsonTree) : data.jsonTree;
           if (parsed && typeof parsed === 'object') {
             if (parsed.explanation) aiExplanation = parsed.explanation;
+            
             if (aiMode === 'edit' && (parsed.updatedNodes || parsed.addedNodes || parsed.deletedNodeIds)) {
               isDiff = true;
               diffData = {
@@ -216,7 +424,7 @@ export function AIChatSidebar() {
           return {
             ...n,
             position: n.position || { x: centerX - 110 + offset, y: centerY - 45 + offset },
-            dimensions: n.dimensions || { width: 220, height: 90 }
+            dimensions: n.dimensions || { width: 160, height: 60 }
           };
         });
         nextNodes = [...nextNodes, ...additions];
@@ -247,7 +455,7 @@ export function AIChatSidebar() {
           parsedNodes = parsedNodes.map((n: any) => ({
             ...n,
             position: n.position || { x: 0, y: 0 },
-            dimensions: n.dimensions || { width: 220, height: 90 }
+            // Don't set dimensions here — autoLayoutNodes handles smart sizing
           }));
           
           if (aiMode === 'generate') {
@@ -364,12 +572,20 @@ export function AIChatSidebar() {
                   Describe what you want to build. The AI will generate a visual diagram in a new file instantly.
                 </p>
               </>
-            ) : (
+            ) : aiMode === 'edit' ? (
               <>
                 <Edit3 size={48} style={{ marginBottom: '16px', color: '#10b981', opacity: 0.8 }} />
                 <h3 style={{ margin: '0 0 8px 0', color: '#e3e3e3', fontSize: '18px' }}>AI Iteration</h3>
                 <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
                   Ask the AI to modify the existing diagram. E.g., "Change all boxes to blue" or "Add a database node".
+                </p>
+              </>
+            ) : (
+              <>
+                <Bot size={48} style={{ marginBottom: '16px', color: '#8b5cf6', opacity: 0.8 }} />
+                <h3 style={{ margin: '0 0 8px 0', color: '#e3e3e3', fontSize: '18px' }}>Agent Mode <span style={{ fontSize: '10px', background: 'linear-gradient(to right, #8b5cf6, #3b82f6)', color: '#fff', padding: '2px 6px', borderRadius: '4px', verticalAlign: 'middle', marginLeft: '6px' }}>PREMIUM</span></h3>
+                <p style={{ margin: 0, fontSize: '14px', lineHeight: '1.5' }}>
+                  Full canvas control without hallucinations. The agent uses precise tools to build and fix diagrams step-by-step.
                 </p>
               </>
             )}
@@ -394,7 +610,7 @@ export function AIChatSidebar() {
                   border: msg.role === 'ai' && !msg.isError ? '1px solid #2a2e39' : msg.isError ? '1px solid #ef444450' : 'none'
                 }}
               >
-                {msg.content}
+                <CollapsibleMessage msg={msg} />
               </div>
             ))}
           </div>
@@ -405,10 +621,10 @@ export function AIChatSidebar() {
              <div style={{ width: '24px', height: '24px', border: '2px solid', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
                <span style={{ fontSize: '14px', fontWeight: 600 }}>
-                 {aiPhase === 'planning' ? '🧠 Planning...' : aiPhase === 'styling' ? '🎨 Styling...' : aiPhase === 'editing' ? '✏️ Editing...' : 'Working...'}
+                 {aiPhase === 'planning' ? '🧠 Planning...' : aiPhase === 'styling' ? '🎨 Styling...' : aiPhase === 'editing' ? '✏️ Editing...' : aiPhase === 'executing' ? '⚙️ Executing tools...' : 'Working...'}
                </span>
                <span style={{ fontSize: '11px', color: '#666', textAlign: 'center', lineHeight: 1.4, maxWidth: '160px' }}>
-                 {aiPhase === 'planning' ? 'AI is analyzing your request and building a semantic blueprint' : aiPhase === 'styling' ? 'Converting blueprint to styled diagram nodes' : aiPhase === 'editing' ? 'Applying your changes to the diagram' : ''}
+                 {aiPhase === 'planning' ? 'AI is analyzing your request and building a semantic blueprint' : aiPhase === 'styling' ? 'Converting blueprint to styled diagram nodes' : aiPhase === 'editing' ? 'Applying your changes to the diagram' : aiPhase === 'executing' ? 'Agent is calling specialized tools and checking collisions' : ''}
                </span>
              </div>
              {aiMode === 'generate' && (
@@ -419,6 +635,38 @@ export function AIChatSidebar() {
               )}
            </div>
         )}
+        {/* Quick Actions (Collisions) */}
+        {(showCollisionAction || canUndoCollision) && (
+           <div style={{ padding: '12px 16px', display: 'flex', gap: '8px', borderTop: '1px solid var(--border-color)', background: 'var(--bg-secondary)', marginTop: '8px', borderRadius: '8px' }}>
+              {showCollisionAction && (
+                <button 
+                   onClick={() => {
+                     saveHistoryState(nodes);
+                     const fixResult = autoFixCollisions(nodes);
+                     setNodes(fixResult.nodes);
+                     setShowCollisionAction(false);
+                     setCanUndoCollision(true);
+                   }}
+                   style={{ padding: '6px 12px', background: '#0c8ce9', color: '#fff', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: 500, flex: 1 }}
+                >
+                  ✨ Auto Fix Collisions
+                </button>
+              )}
+              {canUndoCollision && (
+                <button 
+                   onClick={() => {
+                     undo();
+                     setCanUndoCollision(false);
+                     setShowCollisionAction(true);
+                   }}
+                   style={{ padding: '6px 12px', background: 'transparent', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', borderRadius: '4px', cursor: 'pointer', fontSize: '12px', fontWeight: 500, flex: 1 }}
+                >
+                  ↩️ Undo Collision Fix
+                </button>
+              )}
+           </div>
+        )}
+
         <div ref={messagesEndRef} style={{ height: 1 }} />
       </div>
 
@@ -440,6 +688,14 @@ export function AIChatSidebar() {
           >
             <Edit3 size={12} />
             Edit
+          </button>
+          <button 
+            className={`${styles.modeBtn} ${aiMode === 'agent' ? styles.modeBtnAgentActive : ''}`}
+            onClick={() => setAiMode('agent')}
+            title="Agent Mode"
+          >
+            <Bot size={12} />
+            Agent
           </button>
         </div>
 

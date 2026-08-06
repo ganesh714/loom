@@ -1,18 +1,18 @@
 # Architecture Overview
 
-The Loom backend is a Spring Boot application that operates as a stateless resource server. Its primary responsibility is managing the lifecycle (CRUD) of workspace projects and their nested diagram canvases. It deliberately offloads identity management and token issuance to the `arqulat_auth` service, adopting a decoupled microservices architecture.
+The Arqulat Arc backend is a Spring Boot application that operates as a stateless resource server. Its primary responsibility is managing the lifecycle of workspace projects and nested diagram canvases. Identity management and token issuance are delegated to the `arqulat_auth` service.
 
-## 1. Stateless Resource Server Design
+## Stateless Resource Server Design
 
-Loom relies entirely on the client providing a cryptographically signed JWT via an `HttpOnly` cookie (`arqulat_session`). 
+The backend relies on the client providing a cryptographically signed JWT via an `HttpOnly` cookie (`arqulat_session`).
 Because it is stateless:
 - There is no server-side session state stored in memory.
 - Every incoming request must be independently authenticated.
 - The backend scales horizontally without sticky sessions, as any instance can verify the JWT payload using the shared symmetric `JWT_SECRET`.
 
-## 2. Low-Level Database Paradigm: Why JSONB?
+## Canvas Storage With JSONB
 
-The most critical architectural decision in Loom is how to store diagram canvases. Modern collaborative diagrams consist of hundreds or thousands of nodes (rectangles, diamonds, text blocks, connectors) per canvas.
+The most important storage decision is how to persist diagram canvases. Modern collaborative diagrams can contain hundreds or thousands of nodes, connectors, and text blocks per canvas.
 
 ### The Problem with Relational Storage
 If we used traditional JPA entities for nodes (e.g., a `Node` table mapped with `@OneToMany`), we would encounter massive overhead:
@@ -23,12 +23,12 @@ If we used traditional JPA entities for nodes (e.g., a `Node` table mapped with 
 ### The JSONB Solution
 Instead, the `DiagramFile` entity uses a single PostgreSQL `JSONB` column to store the entire canvas array.
 - **Performance:** PostgreSQL stores `JSONB` in a parsed binary format, allowing fast retrieval. The entire canvas is fetched in a single row read.
-- **Bypassing Deserialization:** The `nodes` field is mapped as a Jackson `JsonNode`. Spring Boot passes this raw JSON tree directly from the database driver to the HTTP response output stream. We completely bypass mapping JSON into Java POJOs, drastically reducing CPU usage and memory allocation.
+- **Bypassing Deserialization:** The `nodes` field is mapped as a Jackson `JsonNode`. Spring Boot can stream the raw JSON tree back to the client without expanding it into a large graph of Java POJOs.
 - **Schema Flexibility:** The frontend can add, remove, or change node properties on the fly without backend migrations. The backend treats the canvas payload as an opaque block of data.
 
-## 3. Data Flow Execution Path
+## Request Flow
 
-When the React frontend makes a request to Loom (e.g., creating a new project), the following low-level execution path occurs:
+When the React frontend makes a request to the Arc backend, the following execution path occurs:
 
 1. **Tomcat Servlet Container:** Receives the HTTP request and enforces basic limits (e.g., `max-http-form-post-size=5MB` to prevent memory exhaustion).
 2. **Security Filter Chain:** 

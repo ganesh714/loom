@@ -2,6 +2,47 @@ import React from 'react';
 import type { DiagramNode } from '@/types';
 import { getSemanticStyle } from '../../../utils/semanticStyles';
 
+export function parseMarkdown(text: string): React.ReactNode {
+  if (!text) return '';
+  
+  const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`|_.*?_)/g;
+  const parts = text.split(regex);
+  
+  return parts.reduce<React.ReactNode[]>((acc, part, index) => {
+    if (part === '') return acc;
+    
+    if (part.startsWith('**') && part.endsWith('**')) {
+      acc.push(<strong key={index}>{part.slice(2, -2)}</strong>);
+    } else if ((part.startsWith('*') && part.endsWith('*')) || (part.startsWith('_') && part.endsWith('_'))) {
+      acc.push(<em key={index}>{part.slice(1, -1)}</em>);
+    } else if (part.startsWith('`') && part.endsWith('`')) {
+      acc.push(
+        <code key={index} style={{
+          fontFamily: 'monospace',
+          backgroundColor: 'rgba(255,255,255,0.1)',
+          padding: '2px 4px',
+          borderRadius: '4px',
+          fontSize: '90%'
+        }}>
+          {part.slice(1, -1)}
+        </code>
+      );
+    } else {
+      const lines = part.split('\n');
+      lines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) {
+          acc.push(<br key={`${index}-br-${lineIndex}`} />);
+        }
+        if (line) {
+          acc.push(<React.Fragment key={`${index}-${lineIndex}`}>{line}</React.Fragment>);
+        }
+      });
+    }
+    
+    return acc;
+  }, []);
+}
+
 interface ShapeRendererProps {
   node: DiagramNode;
   textStyle: React.CSSProperties;
@@ -17,6 +58,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
   const color = node.style?.color || semanticStyle.color || textStyle.color;
 
   const mergedTextStyle = { ...textStyle, color };
+  const content = parseMarkdown(node.content);
 
   switch (node.type) {
     case 'rounded-rect':
@@ -27,7 +69,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxSizing: 'border-box', padding: '8px', boxShadow: node.style?.boxShadow || 'none'
         }}>
-          <div style={mergedTextStyle}>{node.content}</div>
+          <div style={mergedTextStyle}>{content}</div>
         </div>
       );
     case 'terminator':
@@ -38,7 +80,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           borderRadius: '50px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxSizing: 'border-box', padding: '8px 20px', boxShadow: node.style?.boxShadow || 'none'
         }}>
-          <div style={mergedTextStyle}>{node.content}</div>
+          <div style={mergedTextStyle}>{content}</div>
         </div>
       );
     case 'process':
@@ -49,7 +91,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           borderRadius: '2px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxSizing: 'border-box', padding: '8px', boxShadow: node.style?.boxShadow || 'none'
         }}>
-          <div style={mergedTextStyle}>{node.content}</div>
+          <div style={mergedTextStyle}>{content}</div>
         </div>
       );
     case 'uml-class':
@@ -80,7 +122,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           {/* Header */}
           <div style={{ padding: '8px', borderBottom: (node.sections && node.sections.length > 0) ? `1px solid ${borderColor}` : 'none', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '40px', backgroundColor: 'rgba(0,0,0,0.1)' }}>
             {stereotype && <div style={{ fontSize: '9px', fontWeight: 'bold', opacity: 0.8, color }}>{stereotype}</div>}
-            <div style={{ ...mergedTextStyle, fontStyle: isAbstract ? 'italic' : 'normal', fontWeight: 'bold', paddingTop: stereotype ? '4px' : '0' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, fontStyle: isAbstract ? 'italic' : 'normal', fontWeight: 'bold', paddingTop: stereotype ? '4px' : '0' }}>{content}</div>
           </div>
           
           {/* Sections */}
@@ -109,7 +151,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <line x1="50" y1="70" x2="75" y2="95" stroke={borderColor} strokeWidth="3" />
           </svg>
           <div style={{ position: 'absolute', bottom: '-20px', left: 0, width: '100%', textAlign: 'center' }}>
-            <div style={{ ...mergedTextStyle, padding: '2px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '2px' }}>{content}</div>
           </div>
         </div>
       );
@@ -121,7 +163,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxSizing: 'border-box', padding: '12px 24px', boxShadow: node.style?.boxShadow || 'none'
         }}>
-          <div style={mergedTextStyle}>{node.content}</div>
+          <div style={mergedTextStyle}>{content}</div>
         </div>
       );
     case 'component':
@@ -133,7 +175,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <rect x="0" y="65%" width="20" height="15%" fill={bgColor} stroke={borderColor} strokeWidth="2" />
           </svg>
           <div style={{ position: 'absolute', top: 0, left: '20px', width: 'calc(100% - 20px)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '10px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '10px' }}>{content}</div>
           </div>
         </div>
       );
@@ -145,7 +187,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
                   fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </svg>
           <div style={{ position: 'absolute', top: '15%', left: '15%', width: '70%', height: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '5px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
           </div>
         </div>
       );
@@ -168,7 +210,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             )}
           </svg>
           <div style={{ position: 'absolute', top: '35%', left: '10%', width: '80%', height: '55%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '5px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
           </div>
         </div>
       );
@@ -182,7 +224,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <line x1="60" y1="5" x2="60" y2="95" stroke={borderColor} strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.5" />
           </svg>
           <div style={{ position: 'absolute', top: '10%', left: '35%', width: '55%', height: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '5px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
           </div>
         </div>
       );
@@ -193,7 +235,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <path d="M 5,5 L 95,5 L 95,85 C 75,100 50,75 25,90 C 10,98 5,95 5,85 Z" fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </svg>
           <div style={{ position: 'absolute', top: '5%', left: '5%', width: '90%', height: '80%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '5px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
           </div>
         </div>
       );
@@ -204,7 +246,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <polygon points="5,25 95,5 95,95 5,95" fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </svg>
           <div style={{ position: 'absolute', top: '25%', left: '5%', width: '90%', height: '70%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '5px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
           </div>
         </div>
       );
@@ -217,7 +259,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           boxSizing: 'border-box', filter: shadowFilter
         }}>
           <div style={{ transform: `rotate(${-45 - (node.rotation || 0)}deg)`, width: '141.4%', display: 'flex', justifyContent: 'center' }}>
-            <div style={{ ...mergedTextStyle, padding: '4px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '4px' }}>{content}</div>
           </div>
         </div>
       );
@@ -228,7 +270,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <polygon points="20,5 100,5 80,95 0,95" fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
           </svg>
           <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
-            <div style={{ ...mergedTextStyle, padding: '10px 20px' }}>{node.content}</div>
+            <div style={{ ...mergedTextStyle, padding: '10px 20px' }}>{content}</div>
           </div>
         </div>
       );
@@ -260,7 +302,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             borderRadius: '4px', display: 'flex', alignItems: 'center', justifyContent: 'center',
             boxSizing: 'border-box', padding: '8px'
           }}>
-            <div style={mergedTextStyle}>{node.content}</div>
+            <div style={mergedTextStyle}>{content}</div>
           </div>
           {/* Pointer tail */}
           <div style={{
@@ -287,7 +329,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
           borderRadius: '999px', display: 'flex', alignItems: 'center', justifyContent: 'center',
           boxSizing: 'border-box', padding: '4px 8px', boxShadow: node.style?.boxShadow || 'none'
         }}>
-          <div style={{ ...mergedTextStyle, fontSize: '9px', fontWeight: 'bold' }}>{node.content}</div>
+          <div style={{ ...mergedTextStyle, fontSize: '9px', fontWeight: 'bold' }}>{content}</div>
         </div>
       );
     case 'browser':
@@ -306,7 +348,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', backgroundColor: '#22c55e' }} />
           </div>
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '8px' }}>
-            <div style={mergedTextStyle}>{node.content}</div>
+            <div style={mergedTextStyle}>{content}</div>
           </div>
         </div>
       );
@@ -322,7 +364,7 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
            {/* Notch */}
            <div style={{ alignSelf: 'center', width: '30%', height: '6px', backgroundColor: borderColor, borderBottomLeftRadius: '4px', borderBottomRightRadius: '4px', marginBottom: '4px' }} />
            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '4px', backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: '10px' }}>
-             <div style={mergedTextStyle}>{node.content}</div>
+             <div style={mergedTextStyle}>{content}</div>
            </div>
            {/* Home button line */}
            <div style={{ alignSelf: 'center', width: '40%', height: '3px', backgroundColor: borderColor, borderRadius: '4px', marginTop: '4px' }} />

@@ -1,37 +1,41 @@
-# Loom - Professional Diagramming Tool
+# Arqulat Arc
 
-Loom is a high-performance, professional-grade diagramming application built with React and TypeScript. It features a modern, "Figma-like" interface designed for rapid prototyping, flowcharting, and collaboration, supercharged by an embedded Antigravity-style AI Agent.
+Arqulat Arc is a collaborative diagramming workspace for architectural diagrams, UI wireframes, and AI-assisted design iteration. The app pairs a React canvas editor with a Spring Boot backend for projects, files, collaboration, and versioned saves.
 
-## Key Features
+## What It Does
 
-- **Antigravity AI Design Agent**: A sleek, fully integrated AI chat panel featuring:
-  - Speech-to-Text capability via the native Web Speech API with dynamic pulse animations.
-  - Model selection dropdowns (Loom GPT-4, Claude 3.5, Gemini Pro).
-  - Center-screen Portal Modal for browsing chat history.
-  - Auto-expanding inputs and distinct visual message bubbles.
-- **Robust History System**: Reliable Undo (Ctrl+Z) and Redo (Ctrl+Y / Ctrl+Shift+Z) tracking all major canvas interactions.
-- **Categorized Element Library**: Wide variety of shapes grouped into Basic (Rectangles, Circles, Stars, Pills), Flowchart (Diamonds, Hexagons, Databases, Notes), and Connectors (Lines, Arrows). Built using custom, handcrafted SVGs for pixel-perfect line weights.
-- **Live Drawing Previews**: Highly responsive visual feedback (dashed bounds) rendered instantly while dragging mouse to create shapes.
-- **Floating Toolbar UI**: Modern, centered toolbar design with side-by-side categorized lists and a decoupled contextual Comment tool.
-- **Smart Layer Management**: Reorderable layers with representative icons for complex project organization.
-- **Flexible Export/Import**: Full support for saving and loading diagrams via JSON.
+- Diagram canvas with custom shapes, connectors, live draw previews, and drag-and-drop editing.
+- Dashboard for creating and organizing projects and diagram files.
+- Real-time collaboration with WebSocket/STOMP cursors and shared canvas actions.
+- Guest access for trying the workspace without a full account.
+- AI-assisted editing, command palette actions, version history, and import/export flows.
 
 ## Tech Stack
 
-- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Lucide Icons, React RND.
-- **Backend**: Spring Boot (Java) with Spring AI integration (WebFlux).
+- **Frontend:** React 19, TypeScript, Vite, CSS Modules, Lucide React, React Router, SockJS/STOMP.
+- **Backend:** Spring Boot 3.2.6, Java 17, Spring Security, Spring Data JPA, WebSocket/STOMP, Redis, PostgreSQL.
+- **Auth:** `arqulat_auth` provides the shared session cookie used by the Arc app.
 
 ## Getting Started
 
 ### Frontend
-1. Navigate to the `frontend` directory.
-2. Install dependencies: `npm install`
-3. Start the development server: `npm run dev`
-4. Build for production: `npm run build`
+1. Open `frontend`.
+2. Install dependencies with `npm install`.
+3. Start the dev server with `npm run dev`.
+4. Build the app with `npm run build`.
 
 ### Backend
-1. Navigate to the `backend` directory.
-2. Run the application using Maven: `./mvnw spring-boot:run`
+1. Open `backend`.
+2. Configure the required environment variables in `.env` or your deployment environment.
+3. Start the API with `./mvnw spring-boot:run`.
 
----
-*Built with precision for architects, designers, and developers.*
+## Repository Layout
+
+- `frontend/` - React application and UI components.
+- `backend/` - Spring Boot API, WebSocket broker, and persistence layer.
+- `docs/` - Frontend and developer-facing reference material.
+- `backend/docs/` - Backend architecture, API, configuration, database, and security docs.
+
+## Notes
+
+The frontend runs on `http://localhost:5173` and the backend runs on `http://localhost:8081` by default.

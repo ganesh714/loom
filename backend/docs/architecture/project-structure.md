@@ -1,10 +1,10 @@
 # Project Structure
 
-Loom follows a standard, layered Spring Boot package architecture. The separation of concerns ensures that routing, business logic, and database access are strictly isolated from one another.
+Arqulat Arc follows a layered Spring Boot package architecture. The separation of concerns keeps routing, business logic, and database access isolated from one another. The Java package names still use the legacy `com.arqulat.loom_backend` path.
 
 ```text
 src/main/java/com/arqulat/loom_backend/
-├── LoomBackendApplication.java       # Standard Spring Boot entry point
+├── LoomBackendApplication.java       # Spring Boot entry point
 │
 ├── config/                           # Application Configuration
 │   ├── SecurityConfig.java           # Disables CSRF, sets stateless sessions, registers JwtAuthenticationFilter

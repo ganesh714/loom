@@ -17,13 +17,30 @@ export function getClosestPointOnLineNode(p: Point, node: DiagramNode): Point {
   if (node.waypoints && node.waypoints.length > 0) {
     points.push(...node.waypoints);
   } else if (node.routing === 'elbow') {
-    const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
-    if (isVerticalElbow) {
-      points.push({ x: node.startPoint.x, y: (node.startPoint.y + node.endPoint.y) / 2 });
-      points.push({ x: node.endPoint.x, y: (node.startPoint.y + node.endPoint.y) / 2 });
+    const startAnchor = node.startConnection?.anchor;
+    const endAnchor = node.endConnection?.anchor;
+    const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+    const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+    const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+    const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+    const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+
+    if (isPerpendicular) {
+      // L-shape: single corner waypoint
+      if (isStartHoriz) {
+        points.push({ x: node.endPoint.x, y: node.startPoint.y });
+      } else {
+        points.push({ x: node.startPoint.x, y: node.endPoint.y });
+      }
     } else {
-      points.push({ x: (node.startPoint.x + node.endPoint.x) / 2, y: node.startPoint.y });
-      points.push({ x: (node.startPoint.x + node.endPoint.x) / 2, y: node.endPoint.y });
+      const isVerticalElbow = isStartVert || !startAnchor;
+      if (isVerticalElbow) {
+        points.push({ x: node.startPoint.x, y: (node.startPoint.y + node.endPoint.y) / 2 });
+        points.push({ x: node.endPoint.x, y: (node.startPoint.y + node.endPoint.y) / 2 });
+      } else {
+        points.push({ x: (node.startPoint.x + node.endPoint.x) / 2, y: node.startPoint.y });
+        points.push({ x: (node.startPoint.x + node.endPoint.x) / 2, y: node.endPoint.y });
+      }
     }
   }
 

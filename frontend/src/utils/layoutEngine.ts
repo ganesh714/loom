@@ -1,9 +1,45 @@
 import dagre from 'dagre';
 import type { DiagramNode } from '../types';
 
+/** Calculate smart dimensions based on node type and content length */
+function getSmartDimensions(node: DiagramNode): { width: number; height: number } {
+  const isDefault = node.dimensions && (
+    (node.dimensions.width === 220 && node.dimensions.height === 90) ||
+    (node.dimensions.width === 160 && node.dimensions.height === 60) ||
+    (node.dimensions.width === 150 && node.dimensions.height === 60) ||
+    (node.dimensions.width === 130 && node.dimensions.height === 50) ||
+    (node.dimensions.width === 160 && node.dimensions.height === 80) ||
+    (node.dimensions.width === 200 && node.dimensions.height === 80)
+  );
+
+  if (node.dimensions?.width && node.dimensions?.height && !isDefault) {
+    return { width: node.dimensions.width, height: node.dimensions.height };
+  }
+
+  const content = node.content || '';
+  const charCount = content.length;
+
+  let baseWidth = 160;
+  let baseHeight = 60;
+
+  if (node.type === 'pill' || node.type === 'terminator' || node.type === 'rectangle') {
+    baseWidth = 130;
+    baseHeight = 50;
+  } else if (node.type === 'diamond' || node.type === 'circle') {
+    baseWidth = 160;
+    baseHeight = 80;
+  }
+
+  const calcWidth = Math.max(baseWidth, Math.min(280, charCount * 8 + 40));
+  const lines = Math.max(1, Math.ceil((charCount * 8) / Math.max(1, calcWidth - 40)));
+  const calcHeight = Math.max(baseHeight, lines * 20 + 40);
+
+  return { width: Math.round(calcWidth), height: Math.round(calcHeight) };
+}
+
 export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
   const g = new dagre.graphlib.Graph();
-  g.setGraph({ rankdir: 'TB', ranksep: 180, nodesep: 150 });
+  g.setGraph({ rankdir: 'TB', ranksep: 80, nodesep: 100 });
   g.setDefaultEdgeLabel(() => ({}));
 
   const isEdge = (n: DiagramNode) => ['arrow', 'line', 'custom-connector'].includes(n.type);
@@ -12,20 +48,8 @@ export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
   const edges = nodes.filter(n => isEdge(n));
 
   realNodes.forEach(node => {
-    let defaultWidth = 220;
-    let defaultHeight = 90;
-    if (node.type === 'diamond' || node.type === 'circle') {
-      defaultWidth = 140;
-      defaultHeight = 140;
-    } else if (node.type === 'terminator') {
-      defaultWidth = 160;
-      defaultHeight = 70;
-    }
-    
-    g.setNode(node.id, { 
-      width: node.dimensions?.width || defaultWidth, 
-      height: node.dimensions?.height || defaultHeight 
-    });
+    const { width, height } = getSmartDimensions(node);
+    g.setNode(node.id, { width, height });
   });
 
   const outgoingEdges = new Map<string, DiagramNode[]>();
@@ -64,6 +88,9 @@ export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
           minlen = 1;
           weight = 100; // Vertical branch (No/False) has extremely high weight to stay perfectly aligned
         }
+      } else if (edge.type === 'line') {
+        // Undirected line edges (---) should stay on the main spine with high weight
+        weight = 80;
       }
       
       g.setEdge(edge.startConnection.nodeId, edge.endConnection.nodeId, { minlen, weight });
@@ -184,23 +211,25 @@ export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
     }
   }
 
+  // Force undirected line connections (---) to align their target directly below source.
+  // Dagre may drift the target node sideways even with high weight; this fixes it explicitly.
+  edges.forEach(edge => {
+    if (edge.type === 'line' && edge.arrowType === 'none' &&
+        edge.startConnection?.nodeId && edge.endConnection?.nodeId) {
+      const gSource = g.node(edge.startConnection.nodeId);
+      const gTarget = g.node(edge.endConnection.nodeId);
+      if (gSource && gTarget) {
+        gTarget.x = gSource.x;
+      }
+    }
+  });
+
   // Apply calculated layout back to the real nodes
   const layoutedNodes = nodes.map(node => {
     if (!isEdge(node)) {
       const dagreNode = g.node(node.id);
       if (dagreNode) {
-        let defaultWidth = 220;
-        let defaultHeight = 90;
-        if (node.type === 'diamond' || node.type === 'circle') {
-          defaultWidth = 140;
-          defaultHeight = 140;
-        } else if (node.type === 'terminator') {
-          defaultWidth = 160;
-          defaultHeight = 70;
-        }
-
-        const width = node.dimensions?.width || defaultWidth;
-        const height = node.dimensions?.height || defaultHeight;
+        const { width, height } = getSmartDimensions(node);
 
         return {
           ...node,
@@ -228,8 +257,9 @@ export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
         const targetNode = layoutedNodes.find(n => n.id === node.endConnection!.nodeId);
 
         if (sourceNode && targetNode) {
-          // Force edge to use elbow routing for a clean flowchart look
-          node.routing = 'elbow';
+          // Use straight routing for undirected lines, elbow for arrows/directed edges
+          const isUndirected = node.type === 'line' && node.arrowType === 'none';
+          node.routing = isUndirected ? 'straight' : 'elbow';
 
           // Automatically calculate anchor points
           const labelLower = (node.label || '').toLowerCase();

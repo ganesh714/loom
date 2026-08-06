@@ -9,7 +9,7 @@ import { ShortcutsModal } from '@/components/layout/ShortcutsModal';
 import { useNavigate } from 'react-router-dom';
 
 import styles from './Header.module.css';
-import { FolderInput, FileDown, Sun, Moon, LogIn, Palette, Bot, Keyboard, History } from 'lucide-react';
+import { FolderInput, Download, Sun, Moon, LogIn, Palette, Bot, Keyboard, History } from 'lucide-react';
 
 export function Header() {
   const { 
@@ -257,8 +257,8 @@ export function Header() {
             <span>Import JSON</span>
           </button>
           <button className={`${styles.btn} ${styles.btnPrimary}`} onClick={handleExport}>
-            <FileDown size={14} />
-            <span>Export Code</span>
+            <Download size={14} />
+            <span>Export Diagram</span>
           </button>
 
           <div style={{ width: '1px', height: '20px', backgroundColor: 'var(--border-default)', margin: '0 8px' }} />

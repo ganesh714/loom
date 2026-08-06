@@ -1154,7 +1154,29 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
       case 'right': return { x: x + width, y: y + height / 2 };
       case 'start': return { x: x + width / 2, y: y + height / 2 };
       case 'end': return { x: x + width / 2, y: y + height / 2 };
-      case 'closest': return { x: x + width / 2, y: y + height / 2 };
+      case 'closest': {
+        if (!currentPoint) return { x: x + width / 2, y: y + height / 2 };
+        const cx = x + width / 2;
+        const cy = y + height / 2;
+        const anchors = [
+          { point: { x: cx, y }, name: 'top' as const },
+          { point: { x: cx, y: y + height }, name: 'bottom' as const },
+          { point: { x, y: cy }, name: 'left' as const },
+          { point: { x: x + width, y: cy }, name: 'right' as const },
+        ];
+        let best = anchors[0];
+        let bestDist = Infinity;
+        for (const a of anchors) {
+          const dx = a.point.x - currentPoint.x;
+          const dy = a.point.y - currentPoint.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            best = a;
+          }
+        }
+        return best.point;
+      }
     }
   };
 

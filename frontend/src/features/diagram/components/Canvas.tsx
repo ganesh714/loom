@@ -12,6 +12,7 @@ import {
   Triangle, 
   Minus, 
   ArrowRight,
+  Gem,
   Star as StarIcon,
   Plus,
   Minus as ZoomOutIcon,
@@ -244,16 +245,24 @@ export function Canvas() {
 
       // Copy / Paste / Cut
       if ((e.ctrlKey || e.metaKey) && key === 'c') {
+        if (window.getSelection()?.toString().trim() !== '') {
+          return; // Let the browser handle text copy
+        }
         e.preventDefault();
         copySelected();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && key === 'v') {
+        // Only prevent default if we are specifically focused on the canvas body, not if focused elsewhere.
+        // But for paste, it's safer just to try pasteSelected.
         e.preventDefault();
         pasteSelected();
         return;
       }
       if ((e.ctrlKey || e.metaKey) && key === 'x') {
+        if (window.getSelection()?.toString().trim() !== '') {
+          return; // Let the browser handle text cut
+        }
         e.preventDefault();
         cutSelected();
         return;
@@ -456,6 +465,8 @@ export function Canvas() {
 
   const [isDragSelecting, setIsDragSelecting] = useState(false);
   const [marquee, setMarquee] = useState<{ startX: number; startY: number; currentX: number; currentY: number } | null>(null);
+  const [quickAdd, setQuickAdd] = useState<{ x: number; y: number; canvasX: number; canvasY: number } | null>(null);
+  const [portSnapTarget, setPortSnapTarget] = useState<{ nodeId: string; anchor: string; screenX: number; screenY: number } | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -1040,6 +1051,37 @@ export function Canvas() {
       
       broadcast('CURSOR_MOVED', { x: currentX, y: currentY });
       lastCursorBroadcastRef.current = now;
+
+      // Port snapping visual feedback during line/arrow drawing
+      if (activeTool === 'line' || activeTool === 'arrow') {
+        const PORT_SNAP_RADIUS = 24;
+        let bestSnap: typeof portSnapTarget = null;
+        let bestDist = PORT_SNAP_RADIUS;
+        const canvasRect = e.currentTarget.getBoundingClientRect();
+        nodes.forEach(n => {
+          if (n.type === 'line' || n.type === 'arrow') return;
+          const ports: Record<string, { px: number; py: number }> = {
+            top: { px: n.position.x + n.dimensions.width / 2, py: n.position.y },
+            bottom: { px: n.position.x + n.dimensions.width / 2, py: n.position.y + n.dimensions.height },
+            left: { px: n.position.x, py: n.position.y + n.dimensions.height / 2 },
+            right: { px: n.position.x + n.dimensions.width, py: n.position.y + n.dimensions.height / 2 }
+          };
+          Object.entries(ports).forEach(([anchor, { px, py }]) => {
+            const dist = Math.sqrt(Math.pow(currentX - px, 2) + Math.pow(currentY - py, 2));
+            if (dist < bestDist) {
+              bestDist = dist;
+              bestSnap = {
+                nodeId: n.id, anchor,
+                screenX: (px + panOffset.x) * zoom + canvasRect.left,
+                screenY: (py + panOffset.y) * zoom + canvasRect.top
+              };
+            }
+          });
+        });
+        setPortSnapTarget(bestSnap);
+      } else {
+        setPortSnapTarget(null);
+      }
     }
   };
 
@@ -1053,6 +1095,16 @@ export function Canvas() {
         onPointerMove={handlePointerMove}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
+        onDoubleClick={(e) => {
+          if (activeTool !== 'select') return;
+          const target = e.target as HTMLElement;
+          const isCanvasBg = target === canvasRef.current || target.classList.contains(styles.canvas) || target.id === 'arc-export-area';
+          if (!isCanvasBg) return;
+          const rect = e.currentTarget.getBoundingClientRect();
+          const canvasX = (e.clientX - rect.left) / zoom - panOffset.x;
+          const canvasY = (e.clientY - rect.top) / zoom - panOffset.y;
+          setQuickAdd({ x: e.clientX, y: e.clientY, canvasX, canvasY });
+        }}
         style={{
           backgroundColor: canvasBgColor,
           backgroundImage: 'radial-gradient(var(--border-default) 1px, transparent 1px)',
@@ -1446,6 +1498,95 @@ export function Canvas() {
           </div>
         </div>
       </div>
+      {/* Quick Add Shape Popup (double-click on empty canvas) */}
+      {quickAdd && (
+        <div
+          onClick={() => setQuickAdd(null)}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            zIndex: 9998, background: 'transparent'
+          }}
+        />
+      )}
+      {quickAdd && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${quickAdd.x}px`,
+            top: `${quickAdd.y}px`,
+            zIndex: 9999,
+            transform: 'translate(-50%, -110%)',
+            background: 'var(--bg-surface, #1e1e1e)',
+            border: '1px solid var(--border-default, #333)',
+            borderRadius: '12px',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            padding: '8px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '4px',
+            minWidth: '160px',
+            animation: 'quickAddIn 0.15s cubic-bezier(0.4,0,0.2,1)'
+          }}
+        >
+          <div style={{ fontSize: '10px', color: 'var(--text-muted)', padding: '2px 8px 4px', fontWeight: 600, letterSpacing: '0.05em' }}>QUICK ADD</div>
+          {([
+            { type: 'box', label: 'Rectangle', icon: <Square size={14} /> },
+            { type: 'circle', label: 'Ellipse', icon: <Circle size={14} /> },
+            { type: 'diamond', label: 'Diamond', icon: <Gem size={14} /> },
+            { type: 'arrow', label: 'Arrow', icon: <ArrowRight size={14} /> },
+            { type: 'note', label: 'Sticky Note', icon: <StickyNote size={14} /> },
+            { type: 'uml-class', label: 'UML Class', icon: <Sparkles size={14} /> },
+          ] as const).map(({ type, label, icon }) => (
+            <button
+              key={type}
+              onClick={(e) => {
+                e.stopPropagation();
+                const { canvasX, canvasY } = quickAdd;
+                const pos = { x: canvasX - 60, y: canvasY - 20 };
+                if (type === 'box') addBox(pos);
+                else if (type === 'circle') addCircle(pos);
+                else if (type === 'diamond') addDiamond(pos);
+                else if (type === 'arrow') addArrow(pos);
+                else if (type === 'note') addNote(pos);
+                else if (type === 'uml-class') addCustomBlock(pos);
+                setQuickAdd(null);
+              }}
+              style={{
+                display: 'flex', alignItems: 'center', gap: '8px',
+                padding: '6px 8px', borderRadius: '8px', border: 'none',
+                background: 'transparent', color: 'var(--text-primary)',
+                cursor: 'pointer', fontSize: '12px', width: '100%', textAlign: 'left',
+                transition: 'background 0.15s'
+              }}
+              onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg-hover, rgba(255,255,255,0.07))')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', width: '14px', height: '14px' }}>{icon}</span>
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Port Snap Visual Indicator (pulsing ring around anchor on hover during line/arrow draw) */}
+      {portSnapTarget && (
+        <div
+          style={{
+            position: 'fixed',
+            left: `${portSnapTarget.screenX}px`,
+            top: `${portSnapTarget.screenY}px`,
+            width: '16px', height: '16px',
+            borderRadius: '50%',
+            background: 'rgba(12,140,233,0.25)',
+            border: '2px solid #0c8ce9',
+            boxShadow: '0 0 10px rgba(12,140,233,0.6)',
+            transform: 'translate(-50%, -50%)',
+            pointerEvents: 'none',
+            zIndex: 9997,
+            animation: 'portSnapPulse 0.8s ease-in-out infinite'
+          }}
+        />
+      )}
 
       {/* Floating Contextual Menu directly above the selected shape */}
       {selectedNode && (() => {

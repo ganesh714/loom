@@ -6,6 +6,22 @@ import { Logo } from '@/components/ui/Logo';
 import { CreateEntityModal } from '@/components/layout/CreateEntityModal';
 import { useNavigate } from 'react-router-dom';
 import styles from './ProjectsSidebar.module.css';
+import type { WorkspaceProject as Project } from '@/context/DiagramContext';
+
+function getNewFileName(projects: Project[], activeProjectId: string | null) {
+  const activeProj = projects.find(p => p.id === activeProjectId);
+  if (!activeProj || !activeProj.files || activeProj.files.length === 0) return 'Untitled 1';
+  
+  let max = 0;
+  for (const f of activeProj.files) {
+    const match = f.name.match(/^Untitled (\d+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num > max) max = num;
+    }
+  }
+  return `Untitled ${max + 1}`;
+}
 
 export function ProjectsSidebar() {
   const { projects, activeProjectId, activeFileId, addFile, updateFile, deleteFile, isSidebarOpen, toggleSidebar } = useDiagram();
@@ -221,7 +237,7 @@ export function ProjectsSidebar() {
               onClose={() => setIsCreating(false)}
               onConfirm={handleConfirmCreate}
               title="Create New File"
-              defaultName={`Untitled ${projects.find(p => p.id === activeProjectId)?.files.length ? projects.find(p => p.id === activeProjectId)!.files.length + 1 : 1}`}
+              defaultName={getNewFileName(projects, activeProjectId)}
             />
           )}
 

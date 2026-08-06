@@ -1,33 +1,53 @@
-# Loom — Frontend Architecture
+# Arqulat Arc Frontend Architecture
 
 ## Overview
-Loom is a React-based interactive canvas application designed for creating architectural diagrams and UI wireframes. It is built using Vite, React 18, and TypeScript.
+
+Arqulat Arc is a React-based workspace for building architectural diagrams, UI wireframes, and collaborative canvas edits. The frontend uses Vite and TypeScript and is organized around route-level shells plus shared React contexts.
 
 ## Core Technologies
-- **Framework:** React 18
+
+- **Framework:** React 19
 - **Build Tool:** Vite
-- **Styling:** CSS Modules / Vanilla CSS / Tailwind (if requested)
+- **Styling:** CSS Modules, vanilla CSS, and utility classes where appropriate
 - **Icons:** Lucide React
-- **State Management:** React Context (`DiagramContext`, `AuthContext`)
+- **State Management:** React Context via `DiagramContext`, `AuthContext`, and `CollaborationContext`
 
-## State Management (`DiagramContext`)
-The heart of Loom is the `DiagramContext`, which manages the entire canvas state.
-Instead of passing props deeply, the context exposes an API for creating, updating, and manipulating nodes:
-- **DiagramNode:** Represents any item on the canvas (shapes, lines, text).
-- **WorkspaceProject:** A collection of diagram files.
-- **DiagramFile:** A specific canvas with its own nodes and background configuration.
+## App Shell
 
-## Authentication (`AuthContext`)
-Loom delegates all authentication (login, registration, SSO) to the central `arqulat_auth` service.
-- **Cookie-Based:** Upon successful SSO login on `accounts.arqulat.com`, a `.arqulat.com` scoped `arqulat_session` cookie is set.
-- **Cross-Service:** Loom's `AuthContext` simply verifies if this cookie exists by making a call to the `arqulat_auth` backend. If valid, the user is authenticated.
+`App.tsx` routes users between the landing page, dashboard, and workspace.
 
-## Canvas Mechanics
-Loom does not use an external canvas library like Fabric.js; it builds an SVG/DOM-based infinite canvas manually to maintain total control over interactions, panning, zooming, and node customization. Nodes are rendered absolutely positioned based on the context state.
-- **Custom Shapes**: Flowchart nodes (Pills, Parallelograms, Diamonds) are drawn using handcrafted, optimized inline SVGs that match standard `lucide-react` stroke weights and scale responsively.
-- **Live Preview Engine**: As users drag to draw, a highly responsive secondary layer renders dynamic SVG bounds representing the exact shape prior to commit.
+- Authenticated users and guests can enter the dashboard and workspace directly.
+- The workspace shell composes the project sidebar, canvas, left tools, right panels, AI sidebar, and version history.
+- Command palette shortcuts are handled at the top level so they work across routes.
 
-## AI Component Architecture
-The application features an embedded Antigravity-style agent via the `AIChatSidebar` component.
-- **Speech-to-Text**: Integrates directly with the `window.SpeechRecognition` API for live voice dictation.
-- **State Segregation**: Chat history and model selection are managed locally to provide an ultra-responsive UI, backed by centralized portal modals (e.g. `historyModal`) to bypass nested CSS stack constraints.
+## State Management
+
+`DiagramContext` owns project, file, node, and theme state.
+
+- `WorkspaceProject` groups files under a project.
+- `DiagramFile` stores the canvas payload and background settings.
+- Canvas mutations, autosave, and version history restoration all flow through this context.
+
+## Authentication and Guest Mode
+
+`AuthContext` delegates sign-in to `arqulat_auth` and exposes a lightweight guest flow.
+
+- Signed-in sessions rely on the shared `arqulat_session` cookie.
+- Guest mode lets users explore the app without saving to the backend.
+- UI surfaces such as the header and project sidebar adapt their labels and actions based on the auth state.
+
+## Canvas and Collaboration
+
+The canvas is built with custom DOM/SVG rendering rather than a third-party diagram engine.
+
+- Shapes, connectors, and selection outlines are drawn directly from app state.
+- Live previews show the geometry while a user is dragging out a new node.
+- `CollaborationContext` connects through SockJS/STOMP and streams remote cursor and action updates.
+
+## AI and Productivity Features
+
+The AI sidebar provides diagram generation and edit actions backed by the backend API.
+
+- Speech-to-text is wired into the browser speech APIs where available.
+- The command palette surfaces common workspace actions.
+- Export, import, and version history are integrated into the workspace flow rather than isolated dialogs.

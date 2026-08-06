@@ -1,24 +1,17 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import styles from './LandingPage.module.css';
 import { useAuth } from '@/context/AuthContext';
-import { 
-  ArrowRight, 
-  Code, 
-  Globe, 
-  Sparkles, 
-  Shield, 
-  Layers, 
-  Users, 
-  Play, 
-  Cpu, 
+import {
+  ArrowRight,
+  Code,
+  Globe,
+  Sparkles,
+  Shield,
+  Layers,
+  Cpu,
   MessageSquare,
-  History,
-  Keyboard,
-  Share2,
   Database,
-  Server,
-  Copy,
-  Check
+  Server
 } from 'lucide-react';
 
 interface CodeToken {
@@ -35,7 +28,7 @@ const FILES_TEMPLATES: CodeFile[] = [
   {
     name: 'AuthGateway.tsx',
     tokens: [
-      { text: '// React Flow Component\n', type: 'com' },
+      { text: '// Arc Route Component\n', type: 'com' },
       { text: 'import ', type: 'kw' },
       { text: 'React ', type: 'var' },
       { text: 'from ', type: 'kw' },
@@ -72,7 +65,7 @@ const FILES_TEMPLATES: CodeFile[] = [
   {
     name: 'schema.sql',
     tokens: [
-      { text: '-- Postgres DB Table Schemas\n', type: 'com' },
+      { text: '-- Arc Entity Models\n', type: 'com' },
       { text: 'CREATE TABLE ', type: 'kw' },
       { text: 'projects ', type: 'typ' },
       { text: '(\n  id ', type: 'plain' },
@@ -107,7 +100,7 @@ const FILES_TEMPLATES: CodeFile[] = [
   {
     name: 'api.ts',
     tokens: [
-      { text: '// Next.js Route Handler\n', type: 'com' },
+      { text: '// Arc Compilation Handler\n', type: 'com' },
       { text: 'import ', type: 'kw' },
       { text: '{ NextResponse } ', type: 'plain' },
       { text: 'from ', type: 'kw' },
@@ -121,7 +114,7 @@ const FILES_TEMPLATES: CodeFile[] = [
       { text: '= await ', type: 'plain' },
       { text: 'req.json', type: 'var' },
       { text: '();\n  \n  ', type: 'plain' },
-      { text: '// Save architecture diagram\n  ', type: 'com' },
+      { text: '// Sync visual state\n  ', type: 'com' },
       { text: 'const ', type: 'kw' },
       { text: 'dbResult ', type: 'var' },
       { text: '= await ', type: 'plain' },
@@ -137,16 +130,11 @@ const FILES_TEMPLATES: CodeFile[] = [
 
 export function LandingPage() {
   const { login, enterGuestMode } = useAuth();
-  
+
   // Code Editor typing states
   const [activeTab, setActiveTab] = useState(0);
   const [typedCharsCount, setTypedCharsCount] = useState(0);
 
-  // Bento Cards Spotlights
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
-
-  // Copy Cli states
-  const [copied, setCopied] = useState(false);
 
   // Multiplayer Live Simulation State Machine
   const [simStep, setSimStep] = useState(0);
@@ -236,23 +224,6 @@ export function LandingPage() {
     return renderedSpans;
   };
 
-  // Bento Card Cursor Spotlight Track
-  const handleBentoMouseMove = (e: React.MouseEvent<HTMLDivElement>, index: number) => {
-    const card = cardRefs.current[index];
-    if (!card) return;
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    card.style.setProperty('--mouse-x', `${x}px`);
-    card.style.setProperty('--mouse-y', `${y}px`);
-  };
-
-  // Copy command code
-  const handleCopyCommand = () => {
-    navigator.clipboard.writeText('npx create-arc-app@latest workspace');
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   // Multiplayer Diagram Workspace Simulation State Machine Loop
   useEffect(() => {
@@ -296,92 +267,48 @@ export function LandingPage() {
     }
   }, [simStep]);
 
-  const testimonials = [
-    {
-      name: "Jonah Dubois",
-      handle: "@jonahships_",
-      avatar: "J",
-      text: "Setup @arqulat-arc yesterday. All I have to say is, wow. I mapped my DB model visually and Arqulat Arc generated the migration schemas and React flow routes in seconds."
-    },
-    {
-      name: "Aryeh Dubois",
-      handle: "@AryehDubois",
-      avatar: "A",
-      text: "Tried Arqulat Arc. I tried to build my own visual mockups and compilers before, and I am very impressed how many hard things Arqulat Arc gets right. Visual connections are awesome."
-    },
-    {
-      name: "Mark Jaquith",
-      handle: "@markjaquith",
-      avatar: "M",
-      text: "I've been saying for like six months that even if LLMs suddenly stopped improving, we could spend years discovering new uses. @arqulat-arc feels like that kind of 'just had to glue all the parts together' leap."
-    },
-    {
-      name: "Dan Peguine",
-      handle: "@danpeguine",
-      avatar: "D",
-      text: "Why @arqulat-arc is nuts: your context and code layout designs live on YOUR computer, not a walled garden. Growing community building custom blocks. Context persists 24/7."
-    },
-    {
-      name: "Nate Eliason",
-      handle: "@nateliason",
-      avatar: "N",
-      text: "Yeah this was 1,000% worth it. Separate Claude/Gemini model + Arqulat Arc, managing visual canvas components I can compile anywhere, autonomously resolving SQL routes."
-    },
-    {
-      name: "Nathan Clark",
-      handle: "@nathanclark_",
-      avatar: "N",
-      text: "A smart compiler with eyes and hands. You message it like a coworker and it draws diagram connections and spins up SQL backends."
-    }
-  ];
 
   return (
     <div className={styles.container}>
-      {/* Dynamic Blue-Theme Mesh Grid Background */}
-      <div className={styles.background}>
-        <div className={styles.glow}></div>
-      </div>
+      {/* Background */}
+      <div className={styles.background}></div>
+      <div className={styles.glow}></div>
 
       {/* Navigation */}
       <nav className={styles.nav}>
         <div className={styles.logo}>
-          <div className={styles.logoIcon}>L</div>
+          <div className={styles.logoIcon} style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            <img src="/favicon.svg" alt="Arqulat Arc" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
           <span>Arqulat Arc</span>
         </div>
         <div className={styles.navLinks}>
-          <a href="#features">Features</a>
-          <a href="#code-generation">AI Compiler</a>
+          <a href="#code-generation">Compiler</a>
           <a href="#collaboration">Multiplayer</a>
-          <button className={styles.loginBtn} onClick={login}>Sign In</button>
-          <button className={styles.getStartedBtn} onClick={enterGuestMode}>Get Started Free</button>
+          <button className={styles.loginBtn} onClick={login}>Sign in to Cloud</button>
+          <button className={styles.getStartedBtn} onClick={enterGuestMode}>Start Local Workspace</button>
         </div>
       </nav>
 
-      {/* OpenClaw-style Centered Hero Section */}
+      {/* Hero Section */}
       <section className={styles.hero}>
         <div className={styles.badge}>
           <Sparkles size={14} />
-          <span>AI-Driven Visual Development</span>
+          <span>Architecture Reimagined</span>
         </div>
         <h1 className={styles.heroTitle}>
-          Diagram to code. <span className={styles.gradientText}>Instantly.</span>
+          Crystallize thought into <span className={styles.gradientText}>architecture.</span>
         </h1>
         <p className={styles.heroSubtitle}>
-          Weave complex charts directly into React & SQL. Free, fast, and local-first.
+          Weave complex visual blueprints directly into React & SQL. A seamless bridge between human intuition and machine execution.
         </p>
         <div className={styles.heroActions}>
           <button className={styles.primaryBtn} onClick={enterGuestMode}>
-            Start Weaving Code <ArrowRight size={18} />
+            Start Local Workspace (No Login) <ArrowRight size={18} />
           </button>
           <button className={styles.secondaryBtn} onClick={login}>
-            <Play size={18} /> Sign In
+            Sign in to Cloud (Save & Sync)
           </button>
-        </div>
-        
-        {/* OpenClaw-Style Installation Code Snippet */}
-        <div className={styles.bashCommand} onClick={handleCopyCommand}>
-          <code>npx create-arc-app@latest workspace</code>
-          {copied ? <Check size={14} color="#10b981" /> : <Copy size={14} />}
         </div>
       </section>
 
@@ -410,50 +337,55 @@ export function LandingPage() {
       {/* Storyline Timeline: Section 1 - AI Code Generation */}
       <div id="code-generation" className={`${styles.timelineSection} ${styles.reveal}`}>
         <div className={styles.timelineConnector}>
-          <div className={styles.timelineDot}><Sparkles size={16} /></div>
+          <div className={styles.timelineDot}>
+            <div className={styles.timelineDotInner}></div>
+          </div>
           <div className={styles.timelineLine}></div>
         </div>
         <div className={styles.timelineContent}>
           <div className={styles.splitGrid}>
             <div>
               <div className={styles.sectionHeader}>
-                <span className={styles.sectionTag}>Visual Compiler</span>
-                <h2 className={styles.sectionTitle}>Design to Code</h2>
+                <span className={styles.sectionTag}>[ 01. Visual Compiler ]</span>
+                <h2 className={styles.sectionTitle}>Blueprint to logic.</h2>
+                <p className={styles.sectionSubtitle}>
+                  Watch as your structural nodes are autonomously translated into production-ready syntax. From architecture diagram straight to deployment.
+                </p>
               </div>
-              
+
               {/* High Fidelity SVG Diagram showing compiler flow */}
               <div className={styles.svgVisualContainer}>
                 <svg className={styles.svgDiagram} viewBox="0 0 400 250">
                   <defs>
                     <linearGradient id="blueGrad" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#0c8ce9" />
-                      <stop offset="100%" stopColor="#2563eb" />
+                      <stop offset="0%" stopColor="#2f81f7" />
+                      <stop offset="100%" stopColor="#0d1117" />
                     </linearGradient>
                   </defs>
-                  
+
                   {/* Flow Lines */}
-                  <path d="M 60,120 L 170,120" stroke="#38bdf8" strokeWidth="2" strokeDasharray="5 5" />
-                  <path d="M 230,120 L 320,120" stroke="#0c8ce9" strokeWidth="2" />
-                  
+                  <path d="M 60,120 L 170,120" stroke="#30363d" strokeWidth="2" strokeDasharray="5 5" />
+                  <path d="M 230,120 L 320,120" stroke="#2f81f7" strokeWidth="2" />
+
                   {/* Glowing pulses */}
                   <circle cx="115" cy="120" r="4" className={styles.pulsePoint}>
                     <animate attributeName="cx" values="60;170" dur="2s" repeatCount="indefinite" />
                   </circle>
-                  <circle cx="275" cy="120" r="4" className={styles.pulsePoint} style={{ fill: '#38bdf8' }}>
+                  <circle cx="275" cy="120" r="4" className={styles.pulsePoint} style={{ fill: '#79c0ff' }}>
                     <animate attributeName="cx" values="230;320" dur="1.5s" repeatCount="indefinite" />
                   </circle>
 
                   {/* Flow Nodes */}
-                  <rect x="20" y="95" width="50" height="50" rx="8" fill="#121620" stroke="rgba(255,255,255,0.08)" />
-                  <Cpu x="33" y="108" size="24" color="#38bdf8" />
+                  <rect x="20" y="95" width="50" height="50" rx="12" fill="#010409" stroke="#30363d" />
+                  <Cpu x="33" y="108" size="24" color="#8b949e" />
 
                   {/* Compiler Engine Node */}
                   <circle cx="200" cy="120" r="30" fill="url(#blueGrad)" className={styles.glowRect} />
                   <Sparkles x="188" y="108" size="24" color="#fff" />
 
                   {/* Output Node */}
-                  <rect x="320" y="95" width="50" height="50" rx="8" fill="#121620" stroke="rgba(255,255,255,0.08)" />
-                  <Code x="333" y="108" size="24" color="#10b981" />
+                  <rect x="320" y="95" width="50" height="50" rx="12" fill="#010409" stroke="#30363d" />
+                  <Code x="333" y="108" size="24" color="#3fb950" />
                 </svg>
               </div>
             </div>
@@ -462,8 +394,8 @@ export function LandingPage() {
               <div className={styles.editorHeader}>
                 <div className={styles.editorTabs}>
                   {FILES_TEMPLATES.map((file, idx) => (
-                    <button 
-                      key={idx} 
+                    <button
+                      key={idx}
                       className={`${styles.tab} ${activeTab === idx ? styles.tabActive : ''}`}
                       onClick={() => selectTab(idx)}
                     >
@@ -471,9 +403,6 @@ export function LandingPage() {
                       {file.name}
                     </button>
                   ))}
-                </div>
-                <div className={styles.dots} style={{ marginRight: '8px' }}>
-                  <span></span><span></span><span></span>
                 </div>
               </div>
               <pre className={styles.editorBody}>
@@ -487,8 +416,10 @@ export function LandingPage() {
       {/* Storyline Timeline: Section 2 - Collaborative Multiplayer */}
       <div id="collaboration" className={`${styles.timelineSection} ${styles.reveal}`}>
         <div className={styles.timelineConnector}>
-          <div className={styles.timelineDot}><Users size={16} /></div>
-          <div className={styles.timelineLine}></div>
+          <div className={styles.timelineDot}>
+            <div className={styles.timelineDotInner}></div>
+          </div>
+          <div className={styles.timelineLine} style={{ background: 'transparent' }}></div>
         </div>
         <div className={styles.timelineContent}>
           <div className={`${styles.splitGrid} ${styles.reverseSplit}`}>
@@ -499,56 +430,55 @@ export function LandingPage() {
                 <svg className={styles.svgLayer}>
                   {simLineVisible && (
                     <>
-                      <path 
-                        d="M 130,70 L 220,130" 
-                        fill="none" 
-                        stroke="rgba(12, 140, 233, 0.4)" 
-                        strokeWidth="2" 
+                      <path
+                        d="M 130,70 L 220,130"
+                        fill="none"
+                        stroke="rgba(47, 129, 247, 0.4)"
+                        strokeWidth="2"
                       />
-                      <path 
-                        d="M 130,70 L 220,130" 
-                        fill="none" 
-                        stroke="#0c8ce9" 
-                        strokeWidth="2" 
-                        className={styles.connectionLine}
+                      <path
+                        d="M 130,70 L 220,130"
+                        fill="none"
+                        stroke="#2f81f7"
+                        strokeWidth="2"
                       />
                     </>
                   )}
                   {simPulseVisible && (
-                    <circle cx="175" cy="100" r="5" fill="#0c8ce9" style={{ filter: 'drop-shadow(0 0 8px #0c8ce9)' }}>
+                    <circle cx="175" cy="100" r="5" fill="#2f81f7" style={{ filter: 'drop-shadow(0 0 8px #2f81f7)' }}>
                       <animateMotion dur="1.2s" repeatCount="indefinite" path="M 130,70 L 220,130" />
                     </circle>
                   )}
                 </svg>
 
                 {/* Simulated Cursors */}
-                <div 
-                  className={`${styles.cursor} ${styles.cursor1}`} 
+                <div
+                  className={`${styles.cursor} ${styles.cursor1}`}
                   style={{ left: `${simCursors.sarah.x}px`, top: `${simCursors.sarah.y}px` }}
                 >
                   <MessageSquare size={12} /> Sarah
                 </div>
-                <div 
-                  className={`${styles.cursor} ${styles.cursor2}`} 
+                <div
+                  className={`${styles.cursor} ${styles.cursor2}`}
                   style={{ left: `${simCursors.ganesh.x}px`, top: `${simCursors.ganesh.y}px` }}
                 >
                   <Code size={12} /> Ganesh
                 </div>
 
                 {/* Client Node */}
-                <div 
+                <div
                   className={`${styles.simNode} ${simNodes.client ? styles.simNodeActive : ''} ${simNodes.clientActive ? styles.simNodeHighlight : ''}`}
                   style={{ left: '30px', top: '40px' }}
                 >
-                  <Server size={12} color="#0c8ce9" /> Client.ts
+                  <Server size={12} color="#2f81f7" /> Client.ts
                 </div>
 
                 {/* DB Node */}
-                <div 
+                <div
                   className={`${styles.simNode} ${simNodes.database ? styles.simNodeActive : ''} ${simNodes.databaseActive ? styles.simNodeHighlight : ''}`}
                   style={{ left: '210px', top: '120px' }}
                 >
-                  <Database size={12} color="#10b981" /> Database.sql
+                  <Database size={12} color="#3fb950" /> Database.sql
                 </div>
               </div>
             </div>
@@ -556,30 +486,33 @@ export function LandingPage() {
             {/* Content on the Right */}
             <div>
               <div className={styles.sectionHeader}>
-                <span className={styles.sectionTag}>Multiplayer</span>
-                <h2 className={styles.sectionTitle}>Realtime Sync</h2>
+                <span className={styles.sectionTag}>[ 02. Synchronization (In Development) ]</span>
+                <h2 className={styles.sectionTitle}>Shared cognition.</h2>
+                <p className={styles.sectionSubtitle}>
+                  We are building real-time multiplayer synchronization for the future. Witness cursors weave structures synchronously across global nodes without friction or delay.
+                </p>
               </div>
-              
+
               {/* High Fidelity SVG Diagram showing websocket client synchronization */}
               <div className={styles.svgVisualContainer}>
                 <svg className={styles.svgDiagram} viewBox="0 0 400 250">
                   {/* Central WS Sync Gateway */}
-                  <circle cx="200" cy="120" r="35" fill="none" stroke="#0c8ce9" strokeWidth="2" className={styles.glowRect} />
-                  <Globe x="186" y="106" size="28" color="#38bdf8" />
-                  
+                  <circle cx="200" cy="120" r="35" fill="none" stroke="#30363d" strokeWidth="2" className={styles.glowRect} />
+                  <Globe x="186" y="106" size="28" color="#8b949e" />
+
                   {/* Left Client */}
-                  <rect x="30" y="90" width="70" height="60" rx="8" fill="#121620" stroke="rgba(255,255,255,0.06)" />
+                  <rect x="30" y="90" width="70" height="60" rx="12" fill="#010409" stroke="#30363d" />
                   <Cpu x="53" y="105" size="24" color="#8b949e" />
-                  <text x="65" y="142" fill="#8b949e" fontSize="8" textAnchor="middle">Client A</text>
-                  
+                  <text x="65" y="142" fill="#8b949e" fontSize="10" fontFamily="monospace" textAnchor="middle">Node A</text>
+
                   {/* Right Client */}
-                  <rect x="300" y="90" width="70" height="60" rx="8" fill="#121620" stroke="rgba(255,255,255,0.06)" />
+                  <rect x="300" y="90" width="70" height="60" rx="12" fill="#010409" stroke="#30363d" />
                   <Cpu x="323" y="105" size="24" color="#8b949e" />
-                  <text x="335" y="142" fill="#8b949e" fontSize="8" textAnchor="middle">Client B</text>
+                  <text x="335" y="142" fill="#8b949e" fontSize="10" fontFamily="monospace" textAnchor="middle">Node B</text>
 
                   {/* Sync Arrows */}
-                  <path d="M 100,120 L 165,120" stroke="#0c8ce9" strokeWidth="1.5" strokeDasharray="4 4" />
-                  <path d="M 235,120 L 300,120" stroke="#0c8ce9" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <path d="M 100,120 L 165,120" stroke="#2f81f7" strokeWidth="1.5" strokeDasharray="4 4" />
+                  <path d="M 235,120 L 300,120" stroke="#2f81f7" strokeWidth="1.5" strokeDasharray="4 4" />
                 </svg>
               </div>
             </div>
@@ -587,97 +520,69 @@ export function LandingPage() {
         </div>
       </div>
 
-      {/* OpenClaw-Style Testimonials Wall */}
-      <section className={`${styles.testimonialsSection} ${styles.reveal}`}>
-        <h2 className={styles.testimonialsTitle}>Loved by Devs</h2>
-        <div className={styles.testimonialsGrid}>
-          {testimonials.map((t, idx) => (
-            <div key={idx} className={styles.testimonialCard}>
-              <div className={styles.tweetHeader}>
-                <div className={styles.avatar}>{t.avatar}</div>
-                <div className={styles.tweetUser}>
-                  <span className={styles.userName}>{t.name}</span>
-                  <span className={styles.userHandle}>{t.handle}</span>
-                </div>
+      {/* Storyline Timeline: Section 3 - Mermaid Integration */}
+      <div id="mermaid-integration" className={`${styles.timelineSection} ${styles.reveal}`}>
+        <div className={styles.timelineConnector}>
+          <div className={styles.timelineDot}>
+            <div className={styles.timelineDotInner}></div>
+          </div>
+          <div className={styles.timelineLine} style={{ background: 'transparent' }}></div>
+        </div>
+        <div className={styles.timelineContent}>
+          <div className={styles.splitGrid}>
+            <div>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTag}>[ 03. Mermaid Integration (Planning) ]</span>
+                <h2 className={styles.sectionTitle}>Text to architecture.</h2>
+                <p className={styles.sectionSubtitle}>
+                  We are planning a revolutionary pipeline. Paste raw Mermaid code, and watch as it instantly compiles into fully interactive, drag-and-drop structural nodes on your canvas.
+                </p>
               </div>
-              <p className={styles.tweetBody}>{t.text}</p>
             </div>
-          ))}
-        </div>
-      </section>
 
-      {/* Bento Grid Features Section */}
-      <section id="features" className={`${styles.bentoSection} ${styles.reveal}`}>
-        <div className={styles.sectionHeader} style={{ textAlign: 'center', marginBottom: '60px' }}>
-          <span className={styles.sectionTag}>Engineered for Teams</span>
-          <h2 className={styles.sectionTitle}>Productivity Kit</h2>
-        </div>
-        <div className={styles.bentoGrid}>
-          {/* Card 1 (Large) */}
-          <div 
-            ref={el => { cardRefs.current[0] = el; }}
-            className={`${styles.bentoCard} ${styles.bentoLarge}`}
-            onMouseMove={e => handleBentoMouseMove(e, 0)}
-          >
-            <div className={styles.bentoSpotlight}></div>
-            <div className={styles.bentoGlow}></div>
-            <div className={styles.bentoCardIcon}><History size={24} /></div>
-            <h3>Rewind</h3>
-            <p>Rewind changes instantly.</p>
-          </div>
-          {/* Card 2 */}
-          <div 
-            ref={el => { cardRefs.current[1] = el; }}
-            className={styles.bentoCard}
-            onMouseMove={e => handleBentoMouseMove(e, 1)}
-          >
-            <div className={styles.bentoSpotlight}></div>
-            <div className={styles.bentoGlow}></div>
-            <div className={styles.bentoCardIcon}><Keyboard size={24} /></div>
-            <h3>Hotkeys</h3>
-            <p>Accelerate your workspace.</p>
-          </div>
-          {/* Card 3 */}
-          <div 
-            ref={el => { cardRefs.current[2] = el; }}
-            className={styles.bentoCard}
-            onMouseMove={e => handleBentoMouseMove(e, 2)}
-          >
-            <div className={styles.bentoSpotlight}></div>
-            <div className={styles.bentoGlow}></div>
-            <div className={styles.bentoCardIcon}><Layers size={24} /></div>
-            <h3>Infinite Spaces</h3>
-            <p>Map massive nested schemas.</p>
-          </div>
-          {/* Card 4 (Large) */}
-          <div 
-            ref={el => { cardRefs.current[3] = el; }}
-            className={`${styles.bentoCard} ${styles.bentoLarge}`}
-            onMouseMove={e => handleBentoMouseMove(e, 3)}
-          >
-            <div className={styles.bentoSpotlight}></div>
-            <div className={styles.bentoGlow}></div>
-            <div className={styles.bentoCardIcon}><Share2 size={24} /></div>
-            <h3>Universal Export</h3>
-            <p>Deploy React & SQL.</p>
+            {/* Mermaid Visual Simulation */}
+            <div className={styles.svgVisualContainer}>
+              <svg className={styles.svgDiagram} viewBox="0 0 400 250">
+                <rect x="20" y="40" width="140" height="160" rx="8" fill="#010409" stroke="#30363d" />
+                <text x="35" y="70" fill="#2f81f7" fontSize="12" fontFamily="monospace">graph TD</text>
+                <text x="35" y="90" fill="#e6edf3" fontSize="12" fontFamily="monospace">  A[Client]</text>
+                <text x="35" y="110" fill="#e6edf3" fontSize="12" fontFamily="monospace">  B(API)</text>
+                <text x="35" y="130" fill="#e6edf3" fontSize="12" fontFamily="monospace">  A --&gt; B</text>
+
+                <path d="M 175,120 L 225,120" stroke="#2f81f7" strokeWidth="2" strokeDasharray="4 4">
+                  <animate attributeName="stroke-dashoffset" from="16" to="0" dur="1s" repeatCount="indefinite" />
+                </path>
+
+                <rect x="240" y="60" width="120" height="40" rx="8" fill="#0d1117" stroke="#30363d" className={styles.glowRect} />
+                <text x="300" y="84" fill="#e6edf3" fontSize="12" fontFamily="monospace" textAnchor="middle">Client Node</text>
+
+                <rect x="240" y="140" width="120" height="40" rx="8" fill="#0d1117" stroke="#3fb950" />
+                <text x="300" y="164" fill="#3fb950" fontSize="12" fontFamily="monospace" textAnchor="middle">API Node</text>
+
+                <path d="M 300,100 L 300,140" stroke="#30363d" strokeWidth="2" />
+              </svg>
+            </div>
           </div>
         </div>
-      </section>
+      </div>
+
 
       {/* CTA Card Section */}
       <section className={`${styles.ctaSection} ${styles.reveal}`}>
         <div className={styles.ctaCard}>
-          <div className={styles.logoIcon} style={{ width: '48px', height: '48px', fontSize: '24px' }}>L</div>
-          <h2>Ready?</h2>
+          <div className={styles.logoIcon} style={{ width: '56px', height: '56px', background: 'transparent', border: 'none', boxShadow: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <img src="/favicon.svg" alt="Arqulat Arc" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
+          <h2>Initialize Canvas.</h2>
           <p>
-            Weave node models to code. Free Guest Mode.
+            The architecture awaits your command. Weave node models to code. Free Guest Mode.
           </p>
           <div className={styles.heroActions}>
             <button className={styles.primaryBtn} onClick={enterGuestMode}>
-              Open Free Workspace <ArrowRight size={18} />
+              Start Local Workspace (No Login) <ArrowRight size={18} />
             </button>
             <button className={styles.secondaryBtn} onClick={login}>
-              Sign In to Account
+              Sign in to Cloud (Save & Sync)
             </button>
           </div>
         </div>
@@ -685,7 +590,7 @@ export function LandingPage() {
 
       {/* Footer */}
       <footer className={styles.footer}>
-        <p>© 2026 Arqulat Arc by Neuarc. Built for the next generation of developers.</p>
+        <p>© 2026 Arqulat Arc. Engineered for the next generation of architects.</p>
       </footer>
     </div>
   );

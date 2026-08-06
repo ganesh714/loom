@@ -142,9 +142,11 @@ public class FileService {
     @Transactional
     public void deleteFile(UUID fileId, UUID userId) {
         DiagramFile file = getFileIfOwned(fileId, userId);
-        if (file.getProject().getFiles().size() <= 1) {
+        Project project = file.getProject();
+        if (project.getFiles().size() <= 1) {
             throw new IllegalArgumentException("Cannot delete the last file in a project.");
         }
+        project.getFiles().remove(file);
         fileRepository.delete(file);
     }
 

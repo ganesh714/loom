@@ -1,4 +1,4 @@
-# API Endpoints
+# API Reference
 
 All endpoints require a valid `arqulat_session` HttpOnly cookie.
 

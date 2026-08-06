@@ -4,7 +4,7 @@ import { Rnd } from 'react-rnd';
 import { useDiagram } from '@/context/DiagramContext';
 import type { DiagramNode } from '@/types';
 import styles from './Node.module.css';
-import { renderExtendedShape } from './ShapeRenderers';
+import { renderExtendedShape, parseMarkdown } from './ShapeRenderers';
 import { getSemanticStyle } from '../../../utils/semanticStyles';
 import { getClosestPointOnLineNode } from '../../../utils/geometry';
 
@@ -47,6 +47,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
   const isSelected = selectedNodeIds.includes(node.id);
   const [isCardOpen, setIsCardOpen] = useState(node.content === '');
   const [isHovered, setIsHovered] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Figma resize handle - scales inversely with zoom to maintain constant screen size
   const renderFigmaHandle = (position: string) => {
@@ -279,11 +280,13 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
   // Build text style object
   const textStyle: React.CSSProperties = {
     color: effectiveColor || '#e3e3e3',
+    fontFamily: node.style?.fontFamily || 'inherit',
     fontSize: node.style?.fontSize || '11px',
     fontWeight: node.style?.fontWeight || 'normal',
     textAlign: node.style?.textAlign || 'center',
     width: '100%',
     wordBreak: 'break-word',
+    opacity: isEditing ? 0 : 1,
   };
 
   // Shadow filters vs css box shadows
@@ -296,6 +299,12 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
     <Rnd
       position={node.position}
       size={{ width: node.dimensions.width, height: node.dimensions.height }}
+      onDoubleClick={(e: React.MouseEvent) => {
+        if (activeTool === 'select' && !isLine) {
+          e.stopPropagation();
+          setIsEditing(true);
+        }
+      }}
       onDrag={(_e, d) => {
         // Smart Guides Logic
         if (activeTool !== 'select' || selectToolMode !== 'move') return;
@@ -488,7 +497,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
           }}
         >
           <div style={{ ...textStyle, padding: '16px', textAlign: 'center' }}>
-            {node.content}
+            {parseMarkdown(node.content)}
           </div>
         </div>
       ) : node.type === 'circle' ? (
@@ -508,7 +517,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
           }}
         >
           <div style={{ ...textStyle, padding: '8px' }}>
-            {node.content}
+            {parseMarkdown(node.content)}
           </div>
         </div>
       ) : node.type === 'triangle' ? (
@@ -560,7 +569,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             }}
           >
             <div style={{ ...textStyle, padding: '30px 15px 15px 15px' }}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           </div>
         </div>
@@ -588,7 +597,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             }}
           >
             <div style={{ ...textStyle, padding: '24px 20px 20px 20px' }}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           </div>
         </div>
@@ -609,7 +618,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
           }}
         >
           <div style={{ ...textStyle, padding: '8px 20px' }}>
-            {node.content}
+            {parseMarkdown(node.content)}
           </div>
         </div>
       ) : node.type === 'hexagon' ? (
@@ -637,7 +646,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             }}
           >
             <div style={{ ...textStyle, padding: '10px' }}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           </div>
         </div>
@@ -666,7 +675,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             }}
           >
             <div style={{ ...textStyle, padding: '10px 20px' }}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           </div>
         </div>
@@ -702,7 +711,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             }}
           >
             <div style={{ ...textStyle, padding: '10px' }}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           </div>
         </div>
@@ -737,7 +746,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             borderTop: `1px solid ${node.style?.borderColor || '#f59e0b'}`,
           }} />
           <div style={{ ...textStyle, color: node.style?.color || '#92400e' }}>
-            {node.content}
+            {parseMarkdown(node.content)}
           </div>
         </div>
       ) : node.type === 'custom-block' ? (
@@ -765,7 +774,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
         >
           {node.content ? (
             <div style={textStyle}>
-              {node.content}
+              {parseMarkdown(node.content)}
             </div>
           ) : null}
         </div>
@@ -893,7 +902,14 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
               const effectiveArrowType = node.arrowType || (node.type === 'arrow' ? 'single' : 'none');
               const dasharray = node.lineStyle === 'dashed' ? '5 4' : node.lineStyle === 'dotted' ? '2 2' : undefined;
 
-              const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
+              const startAnchor = node.startConnection?.anchor;
+              const endAnchor = node.endConnection?.anchor;
+              const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+              const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+              const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+              const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+              const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+              const isVerticalElbow = isStartVert || (!startAnchor);
               const midY = (startY + endY) / 2;
               const midX = (startX + endX) / 2;
               
@@ -905,7 +921,23 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
                   elbowPath += ` L ${wp.x - node.position.x} ${wp.y - node.position.y}`;
                 }
                 elbowPath += ` L ${endX} ${endY}`;
+              } else if (isPerpendicular) {
+                // L-shape: 2 segments for perpendicular anchor pairs (e.g. right→top)
+                if (isStartHoriz) {
+                  // Horizontal first, then vertical
+                  elbowPath = `M ${startX} ${startY} L ${endX} ${startY} L ${endX} ${endY}`;
+                  generatedWaypoints = [
+                    { x: endX + node.position.x, y: startY + node.position.y }
+                  ];
+                } else {
+                  // Vertical first, then horizontal
+                  elbowPath = `M ${startX} ${startY} L ${startX} ${endY} L ${endX} ${endY}`;
+                  generatedWaypoints = [
+                    { x: startX + node.position.x, y: endY + node.position.y }
+                  ];
+                }
               } else {
+                // Step shape: 3 segments for parallel anchor pairs (existing behavior)
                 elbowPath = isVerticalElbow 
                   ? `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
                   : `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
@@ -1090,6 +1122,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             const endY = node.endPoint!.y - node.position.y;
             let labelX = (startX + endX) / 2;
             let labelY = (startY + endY) / 2;
+            const labelOffset = 14; // px offset to avoid sitting on the line
 
             if (node.waypoints && node.waypoints.length > 0) {
               const midIndex = Math.floor((node.waypoints.length - 1) / 2);
@@ -1097,9 +1130,44 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
               const wp2 = midIndex + 1 < node.waypoints.length ? node.waypoints[midIndex + 1] : { x: endX + node.position.x, y: endY + node.position.y };
               labelX = (wp1.x + wp2.x) / 2 - node.position.x;
               labelY = (wp1.y + wp2.y) / 2 - node.position.y;
+              // Offset perpendicular to the segment
+              const segDx = wp2.x - wp1.x;
+              const segDy = wp2.y - wp1.y;
+              if (Math.abs(segDx) > Math.abs(segDy)) {
+                labelY -= labelOffset; // horizontal segment -> push up
+              } else {
+                labelX += labelOffset; // vertical segment -> push right
+              }
             } else if (node.routing === 'elbow') {
-              labelX = (startX + endX) / 2;
-              labelY = startY;
+              const startAnchorL = node.startConnection?.anchor;
+              const endAnchorL = node.endConnection?.anchor;
+              const isStartHorizL = startAnchorL === 'left' || startAnchorL === 'right';
+              const isStartVertL = startAnchorL === 'top' || startAnchorL === 'bottom';
+              const isEndHorizL = endAnchorL === 'left' || endAnchorL === 'right';
+              const isEndVertL = endAnchorL === 'top' || endAnchorL === 'bottom';
+              const isPerpendicularL = (isStartHorizL && isEndVertL) || (isStartVertL && isEndHorizL);
+              
+              if (isPerpendicularL) {
+                // L-shape: label at the corner
+                if (isStartHorizL) {
+                  labelX = endX;
+                  labelY = startY - labelOffset;
+                } else {
+                  labelX = startX + labelOffset;
+                  labelY = endY;
+                }
+              } else {
+                const isVerticalElbowL = isStartVertL || !startAnchorL;
+                const midYL = (startY + endY) / 2;
+                const midXL = (startX + endX) / 2;
+                if (isVerticalElbowL) {
+                  labelX = (startX + endX) / 2;
+                  labelY = midYL - labelOffset;
+                } else {
+                  labelX = midXL + labelOffset;
+                  labelY = (startY + endY) / 2;
+                }
+              }
             } else if (node.lineCurve === 'curved') {
               const dx = endX - startX;
               const dy = endY - startY;
@@ -1109,6 +1177,17 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
               const ny = len > 0 ? dx / len : 0;
               labelX += nx * (curveOffset * 0.5);
               labelY += ny * (curveOffset * 0.5);
+            } else {
+              // Straight line — offset perpendicular (above the line)
+              const dx = endX - startX;
+              const dy = endY - startY;
+              const len = Math.sqrt(dx * dx + dy * dy);
+              if (len > 0) {
+                labelX += (-dy / len) * labelOffset;
+                labelY += (dx / len) * labelOffset;
+              } else {
+                labelY -= labelOffset;
+              }
             }
 
             if (node.labelPosition === 'start') {
@@ -1125,7 +1204,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
                 left: `${labelX}px`,
                 top: `${labelY}px`,
                 transform: 'translate(-50%, -50%)',
-                background: node.style?.backgroundColor || 'var(--bg-canvas)',
+                background: 'var(--bg-canvas, #1a1a2e)',
                 padding: '2px 6px',
                 borderRadius: '4px',
                 fontSize: node.style?.fontSize || '10px',
@@ -1312,7 +1391,7 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
           }}
         >
           <div style={textStyle}>
-            {node.content}
+            {parseMarkdown(node.content)}
           </div>
         </div>
       )}
@@ -1393,6 +1472,49 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
             onMouseDown={handleEndDrag}
           />
         </>
+      )}
+      {isEditing && (
+        <textarea
+            id={`node-edit-${node.id}`}
+            key={node.content}
+            defaultValue={node.content}
+            autoFocus
+            onBlur={(e) => {
+              const val = e.target.value.trim();
+              updateNode({ ...node, content: val });
+              setIsEditing(false);
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                const val = (e.target as HTMLTextAreaElement).value.trim();
+                updateNode({ ...node, content: val });
+                setIsEditing(false);
+              }
+              if (e.key === 'Escape') {
+                setIsEditing(false);
+              }
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'transparent',
+              border: 'none',
+              color: textStyle.color,
+              fontFamily: 'inherit',
+              fontSize: textStyle.fontSize,
+              fontWeight: textStyle.fontWeight,
+              textAlign: textStyle.textAlign,
+              padding: '16px', // average padding for most shapes
+              resize: 'none',
+              outline: 'none',
+              zIndex: 100,
+              boxSizing: 'border-box'
+            }}
+          />
       )}
     </Rnd>
   );

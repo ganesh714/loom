@@ -818,6 +818,37 @@ export function SidePanel() {
       <AlignmentToolbar />
 
       <div className={styles.propertiesContent}>
+        {!isLine && node.type !== 'custom-block' && (
+          <div className={styles.section}>
+            <span className={styles.sectionTitle}>Shape Properties</span>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Shape Type</span>
+              <select
+                className={styles.select}
+                value={node.type.startsWith('uml-') ? node.type : node.tag || 'rectangle'}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val.startsWith('uml-')) {
+                    updateNode({ ...node, type: val as any, tag: val.split('-')[1] as any });
+                  } else {
+                    updateNode({ ...node, type: 'rounded-rect', tag: val as any });
+                  }
+                }}
+              >
+                <option value="rectangle">Rectangle</option>
+                <option value="circle">Ellipse</option>
+                <option value="diamond">Diamond</option>
+                <option value="terminator">Terminator (Pill)</option>
+                <option value="process">Process (Square)</option>
+                <option value="uml-class">UML Class</option>
+                <option value="uml-interface">UML Interface</option>
+                <option value="database">Database</option>
+                <option value="note">Sticky Note</option>
+              </select>
+            </div>
+          </div>
+        )}
+
         <div className={styles.section}>
           <span className={styles.sectionTitle}>Alignment & Dimensions</span>
           <div className={styles.row}>
@@ -1043,8 +1074,53 @@ export function SidePanel() {
 
         {!isLine && node.type !== 'custom-block' && (
           <div className={styles.section}>
-            <span className={styles.sectionTitle}>Content</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <span className={styles.sectionTitle} style={{ margin: 0 }}>Content</span>
+              <div style={{ display: 'flex', gap: '4px' }}>
+                {[
+                  { label: 'B', prefix: '**', suffix: '**', tooltip: 'Bold' },
+                  { label: 'I', prefix: '*', suffix: '*', tooltip: 'Italic' },
+                  { label: '<>', prefix: '`', suffix: '`', tooltip: 'Code' },
+                ].map(({ label, prefix, suffix, tooltip }) => (
+                  <button
+                    key={label}
+                    title={tooltip}
+                    onClick={() => {
+                      const ta = document.getElementById('sidepanel-content-textarea') as HTMLTextAreaElement;
+                      if (!ta) return;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const text = ta.value;
+                      const before = text.substring(0, start);
+                      const selected = text.substring(start, end);
+                      const after = text.substring(end);
+                      const newVal = before + prefix + selected + suffix + after;
+                      handleChange('content', newVal);
+                      setTimeout(() => {
+                        ta.focus();
+                        ta.setSelectionRange(start + prefix.length, end + prefix.length);
+                      }, 0);
+                    }}
+                    style={{
+                      background: 'var(--bg-hover)',
+                      border: '1px solid var(--border-default)',
+                      color: 'var(--text-primary)',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '10px',
+                      fontWeight: label === 'B' ? 'bold' : 'normal',
+                      fontStyle: label === 'I' ? 'italic' : 'normal',
+                      fontFamily: label === '<>' ? 'monospace' : 'inherit',
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
             <textarea
+              id="sidepanel-content-textarea"
               className={styles.textarea}
               value={node.content}
               onChange={(e) => handleChange('content', e.target.value)}
@@ -1057,6 +1133,19 @@ export function SidePanel() {
         {!isLine && node.type !== 'custom-block' && (
           <div className={styles.section}>
             <span className={styles.sectionTitle}>Typography</span>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Font</span>
+              <select
+                className={styles.select}
+                value={node.style?.fontFamily || 'var(--sans)'}
+                onChange={(e) => handleChange('fontFamily', e.target.value)}
+              >
+                <option value="var(--sans)">Sans-serif</option>
+                <option value="var(--mono)">Monospace</option>
+                <option value="serif">Serif</option>
+                <option value="'Comic Sans MS', cursive, sans-serif">Handwritten</option>
+              </select>
+            </div>
             <div className={styles.row}>
               <span className={styles.rowLabel}>Size</span>
               <select

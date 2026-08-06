@@ -6,7 +6,6 @@ import {
   Search, 
   LayoutGrid, 
   Clock, 
-  FolderKanban, 
   MoreVertical,
   Layers,
   Sparkles,
@@ -19,7 +18,8 @@ import {
   Moon,
   LogOut,
   Edit,
-  Trash2
+  Trash2,
+  Box
 } from 'lucide-react';
 import { CreateEntityModal } from '@/components/layout/CreateEntityModal';
 import { DashboardSettingsModal } from '@/components/layout/DashboardSettingsModal';
@@ -38,7 +38,6 @@ export function Dashboard() {
   const navigate = useNavigate();
   
   const { updateProject, deleteProject } = useDiagram();
-
 
   useEffect(() => {
     if (!activeMenuId) return;
@@ -100,7 +99,9 @@ export function Dashboard() {
       {/* Dashboard Sidebar */}
       <aside className={styles.sidebar}>
         <div className={styles.logoArea}>
-          <div className={styles.logoIcon}>L</div>
+          <div className={styles.logoIcon} style={{ background: 'transparent', border: 'none', boxShadow: 'none' }}>
+            <img src="/favicon.svg" alt="Arqulat Arc" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          </div>
           <span className={styles.logoText}>Arc Dashboard</span>
         </div>
 
@@ -110,14 +111,14 @@ export function Dashboard() {
             className={`${styles.navLink} ${activeNav === 'recent' ? styles.activeNavLink : ''}`}
             onClick={() => setActiveNav('recent')}
           >
-            <Home size={18} />
+            <Home size={16} />
             <span>Recent Projects</span>
           </div>
           <div 
             className={styles.navLink}
             style={{ opacity: 0.4, cursor: 'not-allowed' }}
           >
-            <Star size={18} />
+            <Star size={16} />
             <span>Starred</span>
           </div>
         </nav>
@@ -125,11 +126,11 @@ export function Dashboard() {
         <nav className={styles.navSection}>
           <div className={styles.navLabel}>Organization</div>
           <div className={styles.navLink} style={{ opacity: 0.4, cursor: 'not-allowed' }}>
-            <Users size={18} />
+            <Users size={16} />
             <span>Team Workspace</span>
           </div>
           <div className={styles.navLink} style={{ opacity: 0.4, cursor: 'not-allowed' }}>
-            <Grid3X3 size={18} />
+            <Grid3X3 size={16} />
             <span>Templates</span>
           </div>
         </nav>
@@ -139,25 +140,25 @@ export function Dashboard() {
             className={styles.navLink} 
             onClick={() => setIsSettingsModalOpen(true)}
           >
-            <Settings size={18} />
+            <Settings size={16} />
             <span>Settings</span>
           </div>
           
-          <div style={{ margin: '16px 12px', padding: '12px', background: 'var(--bg-canvas)', borderRadius: '12px', border: '1px solid var(--border-default)' }}>
+          <div style={{ margin: '16px 12px', padding: '12px', background: '#0a0f16', borderRadius: '12px', border: '1px solid #21262d' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-              <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'var(--accent-blue-subtle)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
-                {user?.picture ? <img src={user.picture} style={{ width: '100%' }} /> : <Users size={18} color="var(--accent-blue)" />}
+              <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'rgba(47, 129, 247, 0.1)', border: '1px solid rgba(47, 129, 247, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', flexShrink: 0 }}>
+                {user?.picture ? <img src={user.picture} style={{ width: '100%' }} /> : <Users size={16} color="#2f81f7" />}
               </div>
               <div style={{ overflow: 'hidden', flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{user?.name || 'Explorer'}</div>
-                <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>{isGuest ? 'Guest Access' : 'Pro Account'}</div>
+                <div style={{ fontSize: '13px', fontWeight: 600, color: '#e6edf3', whiteSpace: 'nowrap', textOverflow: 'ellipsis' }}>{user?.name || 'Explorer'}</div>
+                <div style={{ fontSize: '11px', color: '#8b949e', marginTop: '2px', fontFamily: '"JetBrains Mono", monospace' }}>{isGuest ? 'GUEST' : 'PRO'}</div>
               </div>
               <button 
                 onClick={toggleTheme}
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#8b949e', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '6px', transition: 'all 0.2s' }}
                 title={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
-                onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent-blue-subtle)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = 'var(--text-muted)'; }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(47, 129, 247, 0.1)'; e.currentTarget.style.color = '#fff'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'none'; e.currentTarget.style.color = '#8b949e'; }}
               >
                 {theme === 'light' ? <Moon size={14} /> : <Sun size={14} />}
               </button>
@@ -165,11 +166,11 @@ export function Dashboard() {
             
             <button 
               onClick={logout}
-              style={{ width: '100%', background: 'var(--bg-canvas)', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 500, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'var(--accent-blue-subtle)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'var(--bg-canvas)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
+              style={{ width: '100%', background: '#010409', border: '1px solid #21262d', color: '#8b949e', padding: '8px', borderRadius: '8px', fontSize: '12px', fontWeight: 600, fontFamily: '"JetBrains Mono", monospace', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', transition: 'all 0.2s' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.2)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = '#010409'; e.currentTarget.style.color = '#8b949e'; e.currentTarget.style.borderColor = '#21262d'; }}
             >
-              <LogOut size={14} /> Sign out
+              <LogOut size={12} /> LOGOUT
             </button>
           </div>
         </nav>
@@ -179,47 +180,36 @@ export function Dashboard() {
       <main className={styles.main}>
         <header className={styles.header}>
           <div className={styles.titleSection}>
-            <h1>Welcome back, {user?.name?.split(' ')[0] || 'Explorer'}</h1>
-            <p>Manage and create your architectural diagrams and UI models.</p>
+            <h1>Workspace</h1>
+            <p>Select a structural node to begin weaving.</p>
           </div>
           
           <div className={styles.actions}>
             <div style={{ position: 'relative' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <Search size={14} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#8b949e' }} />
               <input 
                 type="text" 
-                placeholder="Search projects..." 
+                placeholder="Find node..." 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                style={{
-                  backgroundColor: 'var(--bg-panel-solid)',
-                  border: '1px solid var(--border-default)',
-                  borderRadius: '8px',
-                  padding: '10px 12px 10px 36px',
-                  color: 'var(--text-primary)',
-                  fontSize: '14px',
-                  width: '280px',
-                  outline: 'none'
-                }}
+                className={styles.searchInput}
               />
             </div>
             <button className={styles.newProjectBtn} onClick={handleCreateNew}>
-              <Plus size={18} />
+              <Plus size={16} />
               <span>Create Project</span>
             </button>
           </div>
         </header>
 
-
-
         {/* Main Grid */}
         {isLoadingProjects ? (
           <div className={styles.grid}>
             {[1, 2, 3, 4].map(i => (
-              <div key={i} className={styles.card} style={{ pointerEvents: 'none', border: 'none' }}>
-                <Skeleton height="140px" borderRadius="12px 12px 0 0" />
-                <div style={{ padding: '16px' }}>
-                  <Skeleton height="20px" width="70%" className="mb-2" />
+              <div key={i} className={styles.card} style={{ pointerEvents: 'none', border: '1px solid #21262d', background: '#0d1117' }}>
+                <Skeleton height="140px" borderRadius="16px 16px 0 0" />
+                <div style={{ padding: '20px' }}>
+                  <Skeleton height="20px" width="70%" className="mb-3" />
                   <Skeleton height="14px" width="40%" />
                 </div>
               </div>
@@ -227,19 +217,24 @@ export function Dashboard() {
           </div>
         ) : filteredProjects.length > 0 ? (
           <div className={styles.grid}>
-            {filteredProjects.sort((a, b) => b.updatedAt - a.updatedAt).map((project) => (
+            {filteredProjects.sort((a, b) => b.updatedAt - a.updatedAt).map((project, idx) => (
               <div 
                 key={project.id} 
                 className={styles.card}
                 onClick={() => handleProjectClick(project.id)}
               >
+                <div className={styles.topBar} />
                 <div className={styles.preview}>
                   <div className={styles.previewGradient} />
+                  <div className={styles.ghostIndex}>
+                    {String(idx + 1).padStart(2, '0')}
+                  </div>
                   <div className={styles.cardIcon}>
-                    <FolderKanban size={64} strokeWidth={1} />
-                  </div>                  {project.files.length > 0 && (
-                    <div style={{ position: 'absolute', bottom: '16px', right: '16px', background: 'var(--accent-blue-subtle)', padding: '6px', borderRadius: '50%' }}>
-                      <Sparkles size={14} color="var(--accent-blue)" />
+                    <Box size={48} strokeWidth={1} />
+                  </div>
+                  {project.files.length > 0 && (
+                    <div style={{ position: 'absolute', bottom: '16px', right: '16px', background: 'rgba(47, 129, 247, 0.1)', padding: '6px', borderRadius: '50%', border: '1px solid rgba(47, 129, 247, 0.2)' }}>
+                      <Sparkles size={12} color="#2f81f7" />
                     </div>
                   )}
                 </div>
@@ -249,7 +244,7 @@ export function Dashboard() {
                     <span className={styles.projectName}>{project.name}</span>
                     <div style={{ position: 'relative' }}>
                       <button 
-                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }} 
+                        style={{ background: 'none', border: 'none', color: '#8b949e', cursor: 'pointer', padding: '4px' }} 
                         onClick={(e) => {
                           e.stopPropagation();
                           setActiveMenuId(activeMenuId === project.id ? null : project.id);
@@ -263,25 +258,26 @@ export function Dashboard() {
                           position: 'absolute',
                           top: '100%',
                           right: '0',
-                          backgroundColor: 'var(--bg-panel-solid)',
-                          border: '1px solid var(--border-default)',
-                          borderRadius: '6px',
-                          boxShadow: 'var(--shadow-sm)',
+                          backgroundColor: '#010409',
+                          border: '1px solid #30363d',
+                          borderRadius: '8px',
+                          boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
                           zIndex: 50,
-                          minWidth: '120px',
-                          overflow: 'hidden'
+                          minWidth: '140px',
+                          overflow: 'hidden',
+                          fontFamily: '"JetBrains Mono", monospace'
                         }}>
                           <button 
                             onClick={(e) => handleRename(e, project.id, project.name)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', borderBottom: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '12px', cursor: 'pointer', textAlign: 'left' }}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'var(--bg-hover)'}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', background: 'none', border: 'none', borderBottom: '1px solid #21262d', color: '#e6edf3', fontSize: '11px', fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0d1117'}
                             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           >
                             <Edit size={12} /> Rename
                           </button>
                           <button 
                             onClick={(e) => handleDelete(e, project.id)}
-                            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '8px 12px', background: 'none', border: 'none', color: '#ef4444', fontSize: '12px', cursor: 'pointer', textAlign: 'left' }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%', padding: '10px 12px', background: 'none', border: 'none', color: '#ef4444', fontSize: '11px', fontWeight: 600, cursor: 'pointer', textAlign: 'left' }}
                             onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(239, 68, 68, 0.1)'}
                             onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
                           >
@@ -294,12 +290,12 @@ export function Dashboard() {
                   
                   <div className={styles.projectMeta}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Clock size={14} color="var(--text-muted)" />
+                      <Clock size={12} color="#8b949e" />
                       <span>{formatDate(project.updatedAt)}</span>
                     </div>
                     <div className={styles.nodeCount}>
-                      <Layers size={12} />
-                      <span>{project.files.length}</span>
+                      <Layers size={10} />
+                      <span>{project.files.length} FILE{project.files.length !== 1 ? 'S' : ''}</span>
                     </div>
                   </div>
                 </div>
@@ -308,13 +304,13 @@ export function Dashboard() {
           </div>
         ) : (
           <div className={styles.emptyState}>
-            <div style={{ backgroundColor: 'var(--bg-surface-solid)', padding: '32px', borderRadius: '50%', color: 'var(--accent-blue)' }}>
-              <LayoutGrid size={48} strokeWidth={1.5} />
+            <div style={{ backgroundColor: '#010409', padding: '32px', borderRadius: '50%', color: '#2f81f7', border: '1px solid #21262d' }}>
+              <LayoutGrid size={48} strokeWidth={1} />
             </div>
-            <h2>No projects found</h2>
-            <p>Ready to start weaving your next masterpiece? Create a new project to begin.</p>
+            <h2>Architecture Dormant</h2>
+            <p>Ready to crystallize your thoughts? Initialize a structural node to begin.</p>
             <button className={styles.newProjectBtn} onClick={handleCreateNew} style={{ marginTop: '12px' }}>
-              Create Your First Project
+              Create First Project
             </button>
           </div>
         )}
@@ -324,8 +320,8 @@ export function Dashboard() {
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onConfirm={handleConfirmCreate}
-        title="Create New Project"
-        defaultName={`New Project ${projects.length + 1}`}
+        title="Create Project"
+        defaultName={`Project_${projects.length + 1}`}
       />
 
       <DashboardSettingsModal

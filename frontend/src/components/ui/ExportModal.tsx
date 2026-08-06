@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Button } from './button';
 import { useDiagram } from '@/context/DiagramContext';
-import { toPng, toSvg } from 'html-to-image';
+import { toPng } from 'html-to-image';
 import { X, Image as ImageIcon, Code, FileJson, Download, Check, Copy } from 'lucide-react';
+import { generateSvgExport } from '@/utils/svgExportEngine';
 
 interface ExportModalProps {
   isOpen: boolean;
@@ -97,7 +98,9 @@ export function ExportModal({ isOpen, onClose, htmlCode }: ExportModalProps) {
       if (format === 'png') {
         dataUrl = await toPng(element, options);
       } else {
-        dataUrl = await toSvg(element, options);
+        const svgString = generateSvgExport(nodes, theme === 'dark' ? '#121212' : '#f8f9fa');
+        const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        dataUrl = URL.createObjectURL(blob);
       }
 
       const a = document.createElement('a');
@@ -106,6 +109,10 @@ export function ExportModal({ isOpen, onClose, htmlCode }: ExportModalProps) {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      
+      if (format === 'svg') {
+        URL.revokeObjectURL(dataUrl);
+      }
     } catch (err) {
       console.error('Export failed:', err);
       alert('Failed to export image. See console for details.');
