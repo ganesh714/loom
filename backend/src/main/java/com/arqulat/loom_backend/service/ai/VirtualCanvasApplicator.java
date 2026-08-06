@@ -706,13 +706,51 @@ public class VirtualCanvasApplicator {
             case "rectangle":
             case "action":
             case "process":
+            case "rect":
                 return "box";
             case "database":
             case "db":
+            case "storage":
+            case "datastore":
                 return "database";
             case "document":
             case "doc":
                 return "document";
+            case "cloud":
+            case "internet":
+            case "network":
+            case "cdn":
+                return "cloud";
+            case "server":
+            case "host":
+            case "infrastructure":
+            case "vm":
+                return "server";
+            case "browser":
+            case "client":
+            case "web":
+            case "webapp":
+                return "browser";
+            case "cylinder":
+            case "queue":
+            case "message-queue":
+            case "buffer":
+            case "broker":
+                return "cylinder";
+            case "component":
+            case "service":
+            case "microservice":
+            case "module":
+                return "component";
+            case "mobile":
+            case "app":
+            case "phone":
+                return "mobile";
+            case "rounded-rect":
+            case "rounded":
+            case "api":
+            case "gateway":
+                return "rounded-rect";
             default:
                 return type;
         }
