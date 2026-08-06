@@ -329,8 +329,12 @@ public class VirtualCanvasApplicator {
                         edge.put("arrowTail", args.path("arrowTail").asText("none"));
                         edge.put("routing", args.path("routing").asText("elbow"));
 
+                        // Cycle through subtle shades of blue-grey to differentiate overlapping lines
+                        String[] subtleShades = { "#37474F", "#455A64", "#546E7A", "#607D8B" };
+                        String shade = subtleShades[new java.util.Random().nextInt(subtleShades.length)];
+                        
                         ObjectNode styleNode = objectMapper.createObjectNode();
-                        styleNode.put("borderColor", "#455A64"); // Uniform blue-grey color
+                        styleNode.put("borderColor", shade);
                         edge.set("style", styleNode);
 
                         canvasArray.add(edge);
