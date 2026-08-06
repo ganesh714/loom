@@ -763,10 +763,10 @@ public class VirtualCanvasApplicator {
 
                 double baseWidth = 160;
                 double baseHeight = 60;
-                if (nodeType.equals("pill") || nodeType.equals("terminator") || nodeType.equals("rectangle")) {
+                if (type.equals("pill") || type.equals("terminator") || type.equals("rectangle")) {
                     baseWidth = 130;
                     baseHeight = 40;
-                } else if (nodeType.equals("diamond")) {
+                } else if (type.equals("diamond")) {
                     baseWidth = 160;
                     baseHeight = 80;
                 }
