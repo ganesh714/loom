@@ -73,6 +73,8 @@ public class AIAgentPrompts {
             "- SIBLING LAYOUT: When a node connects to 2+ children of equal importance (e.g., Backend -> Database + Auth), " +
             "place them SIDE-BY-SIDE on the SAME ROW with different columns (e.g., Database at col -1, Auth at col 1) " +
             "so they flank the parent symmetrically. Do NOT stack siblings vertically unless there is a sequential dependency.\n" +
+            "- PROXIMITY RULE: If a node (e.g. Network, Security) connects to multiple vertical layers (e.g. Frontend AND Backend), " +
+            "place it to the SIDE (col 1 or -1) of those layers instead of pushing it to the very bottom, to prevent lines crossing through unrelated nodes.\n" +
             "- Ensure no two nodes occupy the exact same (row, col) unless intended to overlap.\n\n" +
             "=== COLOR PALETTE RULES ===\n" +
             "Use a PROFESSIONAL, modern color scheme. DO NOT use washed-out pastels like #E8F5E9, #BBDEFB, #FFF9C4.\n" +

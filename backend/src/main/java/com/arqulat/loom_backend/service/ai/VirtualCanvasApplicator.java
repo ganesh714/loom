@@ -699,6 +699,7 @@ public class VirtualCanvasApplicator {
             case "oval":
             case "start":
             case "end":
+            case "terminator":
                 return "pill";
             case "rectangle":
             case "action":

@@ -825,24 +825,21 @@ export function SidePanel() {
               <span className={styles.rowLabel}>Shape Type</span>
               <select
                 className={styles.select}
-                value={node.type.startsWith('uml-') ? node.type : node.tag || 'rectangle'}
+                value={node.type}
                 onChange={(e) => {
-                  const val = e.target.value;
-                  if (val.startsWith('uml-')) {
-                    updateNode({ ...node, type: val as any, tag: val.split('-')[1] as any });
-                  } else {
-                    updateNode({ ...node, type: 'rounded-rect', tag: val as any });
-                  }
+                  updateNode({ ...node, type: e.target.value as any });
                 }}
               >
-                <option value="rectangle">Rectangle</option>
+                <option value="box">Rectangle / Box</option>
+                <option value="pill">Terminator (Pill)</option>
                 <option value="circle">Ellipse</option>
                 <option value="diamond">Diamond</option>
-                <option value="terminator">Terminator (Pill)</option>
                 <option value="process">Process (Square)</option>
                 <option value="uml-class">UML Class</option>
                 <option value="uml-interface">UML Interface</option>
                 <option value="database">Database</option>
+                <option value="server">Server</option>
+                <option value="browser">Browser</option>
                 <option value="note">Sticky Note</option>
               </select>
             </div>
