@@ -38,8 +38,9 @@ public class VirtualCanvasApplicator {
         Map<String, String> newIdMap = new HashMap<>(); // $$NEW_0$$ -> actual UUID
         int newCounter = 0;
 
-        // Track which anchors are already occupied per node for smart anchor selection
-        Map<String, Set<String>> occupiedAnchors = buildOccupiedAnchors(canvasArray);
+        // Track how many connections each (nodeId, anchor-side) has, for inline offset calculation
+        // Key: "nodeId:anchor" -> count of connections already placed on that side
+        Map<String, Integer> anchorCounts = buildAnchorCounts(canvasArray);
         
         // Track edges to prevent exact duplicates (e.g. 5 lines from Server to Database)
         Set<String> seenEdges = new HashSet<>();
@@ -262,23 +263,30 @@ public class VirtualCanvasApplicator {
 
                         if (sourceAnchor.equals("closest") || targetAnchor.equals("closest")) {
                             // Smart anchor selection based on angle and occupied anchors
+                            Set<String> srcOccupied = getOccupiedSides(anchorCounts, sourceId);
+                            Set<String> tgtOccupied = getOccupiedSides(anchorCounts, targetNodeId);
                             String[] bestAnchors = selectSmartAnchors(
                                 srcCenterX, srcCenterY, tgtCenterX, tgtCenterY,
-                                occupiedAnchors.getOrDefault(sourceId, new HashSet<>()),
-                                occupiedAnchors.getOrDefault(targetNodeId, new HashSet<>())
+                                srcOccupied, tgtOccupied
                             );
                             if (sourceAnchor.equals("closest")) sourceAnchor = bestAnchors[0];
                             if (targetAnchor.equals("closest")) targetAnchor = bestAnchors[1];
                         }
-                        // Track occupied anchors for subsequent connections
-                        occupiedAnchors.computeIfAbsent(sourceId, k -> new HashSet<>()).add(sourceAnchor);
-                        occupiedAnchors.computeIfAbsent(targetNodeId, k -> new HashSet<>()).add(targetAnchor);
 
-                        // Calculate actual start and end points based on anchors
-                        double startPtX = getAnchorX(srcX, srcW, sourceAnchor);
-                        double startPtY = getAnchorY(srcY, srcH, sourceAnchor);
-                        double endPtX = getAnchorX(tgtX, tgtW, targetAnchor);
-                        double endPtY = getAnchorY(tgtY, tgtH, targetAnchor);
+                        // Get current count for this (node, side) BEFORE incrementing — this is our slot index
+                        String srcKey = sourceId + ":" + sourceAnchor;
+                        String tgtKey = targetNodeId + ":" + targetAnchor;
+                        int srcSlot = anchorCounts.getOrDefault(srcKey, 0);
+                        int tgtSlot = anchorCounts.getOrDefault(tgtKey, 0);
+                        // Increment counts for subsequent connections
+                        anchorCounts.put(srcKey, srcSlot + 1);
+                        anchorCounts.put(tgtKey, tgtSlot + 1);
+
+                        // Calculate actual start and end points with inline offset
+                        double startPtX = getAnchorX(srcX, srcW, sourceAnchor, srcSlot);
+                        double startPtY = getAnchorY(srcY, srcH, sourceAnchor, srcSlot);
+                        double endPtX = getAnchorX(tgtX, tgtW, targetAnchor, tgtSlot);
+                        double endPtY = getAnchorY(tgtY, tgtH, targetAnchor, tgtSlot);
 
                         ObjectNode startPoint = objectMapper.createObjectNode();
                         startPoint.put("x", startPtX);
@@ -384,37 +392,60 @@ public class VirtualCanvasApplicator {
         return null;
     }
 
+    private static final double ANCHOR_GAP = 20.0; // pixels between connection points on the same side
+
     /**
-     * Calculates the X position of an anchor point on a node.
+     * Calculates the X position of an anchor point on a node, with slot-based offset.
+     * Slot 0 = center, slot 1 = center+gap, slot 2 = center-gap, slot 3 = center+2*gap, etc.
      */
-    private double getAnchorX(double nodeX, double nodeW, String anchor) {
+    private double getAnchorX(double nodeX, double nodeW, String anchor, int slot) {
         switch (anchor) {
             case "left": return nodeX;
             case "right": return nodeX + nodeW;
             case "top":
             case "bottom":
-            default: return nodeX + nodeW / 2;
+            default: {
+                double center = nodeX + nodeW / 2;
+                double offset = getSlotOffset(slot);
+                return center + offset;
+            }
         }
     }
 
     /**
-     * Calculates the Y position of an anchor point on a node.
+     * Calculates the Y position of an anchor point on a node, with slot-based offset.
      */
-    private double getAnchorY(double nodeY, double nodeH, String anchor) {
+    private double getAnchorY(double nodeY, double nodeH, String anchor, int slot) {
         switch (anchor) {
             case "top": return nodeY;
             case "bottom": return nodeY + nodeH;
             case "left":
             case "right":
-            default: return nodeY + nodeH / 2;
+            default: {
+                double center = nodeY + nodeH / 2;
+                double offset = getSlotOffset(slot);
+                return center + offset;
+            }
         }
     }
 
     /**
-     * Builds a map of occupied anchors per node from existing edges in the canvas.
+     * Converts a slot index to a pixel offset from center.
+     * Slot 0 = 0 (center), slot 1 = +gap, slot 2 = -gap, slot 3 = +2*gap, slot 4 = -2*gap, ...
+     * This zigzag pattern spreads connections evenly around the center.
      */
-    private Map<String, Set<String>> buildOccupiedAnchors(ArrayNode canvasArray) {
-        Map<String, Set<String>> occupied = new HashMap<>();
+    private double getSlotOffset(int slot) {
+        if (slot == 0) return 0;
+        int level = (slot + 1) / 2; // 1,1,2,2,3,3,...
+        int sign = (slot % 2 == 1) ? 1 : -1; // +,-,+,-,...
+        return sign * level * ANCHOR_GAP;
+    }
+
+    /**
+     * Builds a count of connections per (nodeId, anchor-side) from existing edges.
+     */
+    private Map<String, Integer> buildAnchorCounts(ArrayNode canvasArray) {
+        Map<String, Integer> counts = new HashMap<>();
         for (JsonNode item : canvasArray) {
             String type = item.path("type").asText("");
             if (!"arrow".equals(type) && !"line".equals(type)) continue;
@@ -425,13 +456,28 @@ public class VirtualCanvasApplicator {
             String endAnchor = item.path("endConnection").path("anchor").asText("");
 
             if (!startNodeId.isEmpty() && !startAnchor.isEmpty() && !startAnchor.equals("closest")) {
-                occupied.computeIfAbsent(startNodeId, k -> new HashSet<>()).add(startAnchor);
+                String key = startNodeId + ":" + startAnchor;
+                counts.put(key, counts.getOrDefault(key, 0) + 1);
             }
             if (!endNodeId.isEmpty() && !endAnchor.isEmpty() && !endAnchor.equals("closest")) {
-                occupied.computeIfAbsent(endNodeId, k -> new HashSet<>()).add(endAnchor);
+                String key = endNodeId + ":" + endAnchor;
+                counts.put(key, counts.getOrDefault(key, 0) + 1);
             }
         }
-        return occupied;
+        return counts;
+    }
+
+    /**
+     * Extracts which anchor sides are occupied for a given nodeId (for smart anchor selection).
+     */
+    private Set<String> getOccupiedSides(Map<String, Integer> anchorCounts, String nodeId) {
+        Set<String> sides = new HashSet<>();
+        for (String anchor : new String[]{"top", "bottom", "left", "right"}) {
+            if (anchorCounts.getOrDefault(nodeId + ":" + anchor, 0) > 0) {
+                sides.add(anchor);
+            }
+        }
+        return sides;
     }
 
     /**
