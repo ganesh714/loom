@@ -90,7 +90,7 @@ public class VirtualCanvasApplicator {
                         
                         if (nodeType.equals("pill") || nodeType.equals("terminator") || nodeType.equals("rectangle")) {
                             baseWidth = 130;
-                            baseHeight = 50;
+                            baseHeight = 40;
                         } else if (nodeType.equals("diamond")) {
                             baseWidth = 160;
                             baseHeight = 80;
@@ -100,13 +100,14 @@ public class VirtualCanvasApplicator {
                         double calcWidth = Math.max(baseWidth, Math.min(280, charCount * 8.0 + 40));
                         int lines = (int) Math.ceil((charCount * 8.0) / Math.max(1, calcWidth - 40));
                         if (lines == 0) lines = 1;
-                        double calcHeight = Math.max(baseHeight, lines * 20.0 + 40);
+                        double paddingVert = baseHeight - 20.0; // Dynamic padding based on baseHeight (assumes 20px per line)
+                        double calcHeight = Math.max(baseHeight, lines * 20.0 + paddingVert);
                         
                         double w = args.has("width") ? args.path("width").asDouble() : calcWidth;
                         double h = args.has("height") ? args.path("height").asDouble() : calcHeight;
                         
-                        // If LLM blindly used the 160x60 default or 220x90, override with our smart calc
-                        if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
+                        // If LLM blindly used default sizes, override with our smart calc
+                        if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 130 && h == 40) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
                             w = calcWidth;
                             h = calcHeight;
                         }
@@ -327,6 +328,12 @@ public class VirtualCanvasApplicator {
                         edge.put("arrowHead", args.path("arrowHead").asText("filled"));
                         edge.put("arrowTail", args.path("arrowTail").asText("none"));
                         edge.put("routing", args.path("routing").asText("elbow"));
+
+                        String[] edgeColors = { "#1976D2", "#388E3C", "#D32F2F", "#FBC02D", "#8E24AA", "#F57C00", "#0097A7", "#455A64" };
+                        String randomColor = edgeColors[new java.util.Random().nextInt(edgeColors.length)];
+                        ObjectNode styleNode = objectMapper.createObjectNode();
+                        styleNode.put("borderColor", randomColor);
+                        edge.set("style", styleNode);
 
                         canvasArray.add(edge);
                         logger.debug("connect_nodes: {} -> {} (label: {})", sourceId, targetNodeId,
@@ -756,21 +763,22 @@ public class VirtualCanvasApplicator {
 
                 double baseWidth = 160;
                 double baseHeight = 60;
-                if (type.equals("pill") || type.equals("terminator") || type.equals("rectangle")) {
+                if (nodeType.equals("pill") || nodeType.equals("terminator") || nodeType.equals("rectangle")) {
                     baseWidth = 130;
-                    baseHeight = 50;
-                } else if (type.equals("diamond")) {
+                    baseHeight = 40;
+                } else if (nodeType.equals("diamond")) {
                     baseWidth = 160;
                     baseHeight = 80;
                 }
-
+                
                 int charCount = content.length();
                 double calcWidth = Math.max(baseWidth, Math.min(280, charCount * 8.0 + 40));
                 int lines = (int) Math.ceil((charCount * 8.0) / Math.max(1, calcWidth - 40));
                 if (lines == 0) lines = 1;
-                double calcHeight = Math.max(baseHeight, lines * 20.0 + 40);
-
-                if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
+                double paddingVert = baseHeight - 20.0;
+                double calcHeight = Math.max(baseHeight, lines * 20.0 + paddingVert);
+                
+                if ((w == 160 && h == 60) || (w == 220 && h == 90) || (w == 150 && h == 60) || (w == 130 && h == 50) || (w == 130 && h == 40) || (w == 160 && h == 80) || (w == 200 && h == 80)) {
                     w = calcWidth;
                     h = calcHeight;
                 }
