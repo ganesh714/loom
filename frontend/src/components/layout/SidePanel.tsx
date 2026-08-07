@@ -11,6 +11,7 @@ import {
   ArrowUp, 
   ArrowDown
 } from 'lucide-react';
+import { BannerAd } from '@/components/ui/BannerAd';
 
 export function SidePanel() {
   const { 
@@ -99,6 +100,11 @@ export function SidePanel() {
           
           <div className="p-4 text-xs text-slate-500 text-center bg-[#1e1e1e] m-3 rounded border border-dashed border-neutral-800">
             Select a layer on the canvas or layers list to inspect and edit its properties.
+          </div>
+          
+          {/* Ad Placeholder at the bottom of the empty state */}
+          <div className="px-3 pb-3 mt-auto">
+            <BannerAd />
           </div>
         </div>
       </div>
