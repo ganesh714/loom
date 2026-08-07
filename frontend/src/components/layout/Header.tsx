@@ -10,6 +10,7 @@ import { useNavigate } from 'react-router-dom';
 
 import styles from './Header.module.css';
 import { FolderInput, Download, Sun, Moon, LogIn, Palette, Bot, Keyboard, History } from 'lucide-react';
+import { BannerAd } from '@/components/ui/BannerAd';
 
 export function Header() {
   const { 
@@ -154,6 +155,11 @@ export function Header() {
               </>
             )}
           </div>
+        </div>
+
+        {/* Ad Placeholder in Header */}
+        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '0 16px', maxWidth: '500px' }}>
+          <BannerAd className="!my-0" />
         </div>
 
         <div className={styles.actions}>
