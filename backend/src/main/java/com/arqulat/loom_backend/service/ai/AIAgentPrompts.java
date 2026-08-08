@@ -82,18 +82,45 @@ public class AIAgentPrompts {
                         "Think step by step in natural language:\n" +
                         "- What is the primary flow of the diagram? (e.g., top-to-bottom for flowcharts)\n" +
                         "- Assign a specific `row` and `col` integer index to EVERY entity.\n" +
-                        "  * E.g., for an if-else ladder, the main condition path might go down (col 0, rows 0, 1, 2) while the 'True' branches branch out horizontally (col 1, rows 0, 1, 2).\n"
+                        "  * E.g., for an if-else ladder, the main condition path might go down (col 0, rows 0, 1, 2) while the 'True' branches branch out horizontally (col 1, rows 0, 1, 2).\n\n"
                         +
-                        "- SIBLING LAYOUT: When a node connects to 2+ children of equal importance (e.g., Backend -> Database + Auth), "
+                        "=== SYMMETRIC TREE LAYOUT (CRITICAL) ===\n" +
+                        "When a parent node connects to multiple children, arrange them as a BALANCED TREE, NOT a flat horizontal row.\n\n"
                         +
-                        "place them SIDE-BY-SIDE on the SAME ROW with different columns (e.g., Database at col -1, Auth at col 1) "
+                        "RULES:\n" +
+                        "- 2 children: Place side-by-side on the NEXT ROW, symmetric around the parent's column.\n" +
+                        "  Example: Parent at (row 1, col 0) → Child A at (row 2, col -1), Child B at (row 2, col 1)\n\n"
                         +
-                        "so they flank the parent symmetrically. Do NOT stack siblings vertically unless there is a sequential dependency.\n"
+                        "- 3 children: Place the most important one directly below the parent, and flank the other two on the sides.\n"
                         +
-                        "- PROXIMITY RULE: If a node (e.g. Network, Security) connects to multiple vertical layers , " +
-                        "place it to the SIDE (col 1 or -1) of those layers instead of pushing it to the very bottom, to prevent lines crossing through unrelated nodes.\n"
+                        "  Example: Parent at (row 1, col 0) → Child A at (row 2, col -1), Child B at (row 2, col 0), Child C at (row 2, col 1)\n\n"
+                        +
+                        "- 4+ children: Split into TWO ROWS. Place 2 on each row, symmetric.\n" +
+                        "  Example: Parent at (row 1, col 0) → A at (row 2, col -1), B at (row 2, col 1), C at (row 3, col -1), D at (row 3, col 1)\n\n"
+                        +
+                        "- NEVER dump all children on a single horizontal row. This creates ugly, flat layouts with long crossing lines.\n\n"
+                        +
+                        "- CROSS-CUTTING NODES (e.g. Cache, Security, Logging): If a node connects to a parent but is conceptually \"alongside\" it "
+                        +
+                        "(not truly a child), place it at the SAME ROW as the parent but offset to the side (col +2 or -2). "
+                        +
+                        "Do NOT push it down into the children rows.\n\n" +
+                        "- PROXIMITY RULE: If a node (e.g. Network, Security) connects to multiple vertical layers, " +
+                        "place it to the SIDE (col 2 or -2) of those layers instead of pushing it to the very bottom, to prevent lines crossing through unrelated nodes.\n\n"
                         +
                         "- Ensure no two nodes occupy the exact same (row, col) unless intended to overlap.\n\n" +
+                        "=== ARCHITECTURE LAYOUT EXAMPLE ===\n" +
+                        "For: Client App → API Gateway → Auth Service → {External IdP, User Database, SMTP/Email}, Auth Service → Redis Cache\n"
+                        +
+                        "Good symmetric layout:\n" +
+                        "  Client App:     row 0, col 0  (top center)\n" +
+                        "  API Gateway:    row 1, col 0  (below client, centered)\n" +
+                        "  Auth Service:   row 2, col 0  (below gateway, centered)\n" +
+                        "  External IdP:   row 3, col -1 (left child)\n" +
+                        "  User Database:  row 4, col -1 (bottom-left, below IdP)\n" +
+                        "  SMTP/Email:     row 4, col 1  (bottom-right, mirrors DB)\n" +
+                        "  Redis Cache:    row 3, col 2  (side placement, same level as IdP but offset)\n\n"
+                        +
                         "=== COLOR PALETTE RULES ===\n" +
                         "Use a PROFESSIONAL, modern color scheme. DO NOT use washed-out pastels like #E8F5E9, #BBDEFB, #FFF9C4.\n"
                         +
@@ -118,14 +145,14 @@ public class AIAgentPrompts {
                         "    { \"entity\": \"Action1\", \"row\": 1, \"col\": 1 }\n" +
                         "  ],\n" +
                         "  \"gridMetrics\": { \"columnWidth\": 240, \"rowHeight\": 120 },\n" +
-                        "  \"nodeDefaults\": { \"width\": 160, \"height\": 60 },\n" +
+                        "  \"nodeDefaults\": { \"width\": 130, \"height\": 40 },\n" +
                         "  \"colorPalette\": {\n" +
                         "    \"Primary\": { \"bg\": \"#1a1a2e\", \"border\": \"#16213e\", \"text\": \"#ffffff\" }\n" +
                         "  },\n" +
-                        "  \"styleHints\": \"Decision nodes use type 'rhombus'.\"\n" +
+                        "  \"styleHints\": \"Decision nodes use type 'diamond'.\"\n" +
                         "}\n" +
                         "</RESULT>\n\n" +
-                        "IMPORTANT: Think thoroughly about the (row, col) coordinates to avoid overlaps and create a clean flow. "
+                        "IMPORTANT: Think thoroughly about the (row, col) coordinates to avoid overlaps and create a clean, SYMMETRIC flow. "
                         +
                         "Your reasoning before <RESULT> is crucial.";
 
