@@ -232,21 +232,71 @@ export function autoFixCollisions(nodes: DiagramNode[], maxPasses = 3): { nodes:
       const obstructNode = currentNodes.find(n => n.id === intersection.obstructingNodeId);
       if (edgeIndex === -1 || !obstructNode) continue;
 
-      const edge = currentNodes[edgeIndex];
+      const edge = { ...currentNodes[edgeIndex] };
       const rect = getNodeRect(obstructNode);
-
-      // Simple fix: Route the line above the obstructing node
-      const waypointY = rect.y - padding;
-      const waypointX = rect.x + rect.width / 2;
-
-      const newWaypoints = [...(edge.waypoints || [])];
-      newWaypoints.push({ x: waypointX, y: waypointY });
-
-      currentNodes[edgeIndex] = {
-        ...edge,
-        routing: 'curved', // curved looks better with custom waypoints
-        waypoints: newWaypoints
+      const inflatedRect = {
+        x: rect.x - padding,
+        y: rect.y - padding,
+        width: rect.width + padding * 2,
+        height: rect.height + padding * 2
       };
+
+      if (!edge.startPoint || !edge.endPoint) continue;
+
+      if (edge.routing === 'elbow') {
+        const startAnchor = edge.startConnection?.anchor;
+        const endAnchor = edge.endConnection?.anchor;
+        const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+        const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+        const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+        const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+        const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+
+        if (isPerpendicular) {
+           // It's an L-shape. The default corner is (end.x, start.y) if start is horiz.
+           // Alternative corner: (start.x, end.y) if start is horiz.
+           if (isStartHoriz) {
+             edge.waypoints = [{ x: edge.startPoint.x, y: edge.endPoint.y }];
+           } else {
+             edge.waypoints = [{ x: edge.endPoint.x, y: edge.startPoint.y }];
+           }
+        } else {
+           // It's a 3-segment elbow. Shift the middle segment to clear the obstacle.
+           const isVerticalElbow = isStartVert || !startAnchor;
+           
+           if (isVerticalElbow) {
+             const origMidY = (edge.startPoint.y + edge.endPoint.y) / 2;
+             const option1 = inflatedRect.y;
+             const option2 = inflatedRect.y + inflatedRect.height;
+             const newMidY = Math.abs(origMidY - option1) < Math.abs(origMidY - option2) ? option1 : option2;
+             
+             edge.waypoints = [
+               { x: edge.startPoint.x, y: newMidY },
+               { x: edge.endPoint.x, y: newMidY }
+             ];
+           } else {
+             const origMidX = (edge.startPoint.x + edge.endPoint.x) / 2;
+             const option1 = inflatedRect.x;
+             const option2 = inflatedRect.x + inflatedRect.width;
+             const newMidX = Math.abs(origMidX - option1) < Math.abs(origMidX - option2) ? option1 : option2;
+             
+             edge.waypoints = [
+               { x: newMidX, y: edge.startPoint.y },
+               { x: newMidX, y: edge.endPoint.y }
+             ];
+           }
+        }
+      } else {
+        // Fallback for straight/curved
+        const waypointY = rect.y - padding;
+        const waypointX = rect.x + rect.width / 2;
+        const newWaypoints = [...(edge.waypoints || [])];
+        newWaypoints.push({ x: waypointX, y: waypointY });
+        edge.routing = 'curved';
+        edge.waypoints = newWaypoints;
+      }
+
+      currentNodes[edgeIndex] = edge;
     }
   }
 
