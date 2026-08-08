@@ -72,6 +72,7 @@ export function Canvas() {
     addCustomBlock,
     addCustomConnector,
     updateWaypoint,
+    updateElbowMidpoint,
     zoom,
     setZoom,
     activeTool,
@@ -1206,6 +1207,53 @@ export function Canvas() {
                       }
                       return nextNodes;
                     });
+                  };
+                  
+                  document.addEventListener('mousemove', handleMouseMove);
+                  document.addEventListener('mouseup', handleMouseUp);
+                }}
+                onMiddleSegmentDragStart={(e, nodeId, axis) => {
+                  e.stopPropagation();
+                  setDraggingWaypoint({ nodeId, index: -1 }); // Special index for middle segment
+                  saveHistoryState(nodes); // Save pre-drag state
+                  
+                  // Initialize waypoints if they don't exist
+                  const lineNode = nodes.find(n => n.id === nodeId);
+                  if (lineNode && (!lineNode.waypoints || lineNode.waypoints.length === 0)) {
+                    const startX = lineNode.startPoint!.x;
+                    const startY = lineNode.startPoint!.y;
+                    const endX = lineNode.endPoint!.x;
+                    const endY = lineNode.endPoint!.y;
+                    const isVertical = lineNode.startConnection?.anchor === 'bottom' || lineNode.startConnection?.anchor === 'top' || !lineNode.startConnection?.anchor;
+                    
+                    let initialWaypoints = [];
+                    if (isVertical) {
+                      const midY = (startY + endY) / 2;
+                      initialWaypoints = [{ x: startX, y: midY }, { x: endX, y: midY }];
+                    } else {
+                      const midX = (startX + endX) / 2;
+                      initialWaypoints = [{ x: midX, y: startY }, { x: midX, y: endY }];
+                    }
+                    setNodes(prev => prev.map(n => n.id === nodeId ? { ...n, waypoints: initialWaypoints } : n));
+                  }
+                  
+                  const handleMouseMove = (moveEvent: MouseEvent) => {
+                    const rect = canvasRef.current?.getBoundingClientRect();
+                    if (!rect) return;
+                    const currentX = (moveEvent.clientX - rect.left) / zoom - panOffset.x;
+                    const currentY = (moveEvent.clientY - rect.top) / zoom - panOffset.y;
+                    updateElbowMidpoint(nodeId, axis === 'x' ? currentX : currentY, axis);
+                  };
+                  
+                  const handleMouseUp = (upEvent: MouseEvent) => {
+                    document.removeEventListener('mousemove', handleMouseMove);
+                    document.removeEventListener('mouseup', handleMouseUp);
+                    setDraggingWaypoint(null);
+                    
+                    const finalNode = nodes.find(n => n.id === nodeId);
+                    if (finalNode) {
+                      setTimeout(() => broadcast('NODE_UPDATED', finalNode), 0);
+                    }
                   };
                   
                   document.addEventListener('mousemove', handleMouseMove);

@@ -51,6 +51,7 @@ interface DiagramContextType {
   addShape: (type: string, position?: { x: number; y: number }) => void;
   updateLinePoints: (id: string, startPoint: { x: number; y: number }, endPoint: { x: number; y: number }) => void;
   updateWaypoint: (id: string, index: number, pos: { x: number; y: number }) => void;
+  updateElbowMidpoint: (id: string, value: number, axis: 'x' | 'y') => void;
   updateNode: (updatedNode: DiagramNode, saveHistory?: boolean) => void;
   updateMultipleNodes: (ids: string[], updates: Partial<DiagramNode>) => void;
   moveNode: (id: string, position: { x: number; y: number }) => void;
@@ -1054,6 +1055,22 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
     }));
   };
 
+  const updateElbowMidpoint = (id: string, value: number, axis: 'x' | 'y') => {
+    setNodes((prev) => prev.map(node => {
+      if (node.id === id && node.waypoints && node.waypoints.length === 2) {
+        const newWaypoints = node.waypoints.map(wp => ({
+          ...wp,
+          [axis]: value
+        }));
+        return {
+          ...node,
+          waypoints: newWaypoints
+        };
+      }
+      return node;
+    }));
+  };
+
   const updateNode = (updatedNode: DiagramNode, saveHistory: boolean = true) => {
     if (saveHistory) {
       saveHistoryState(nodes);
@@ -1825,7 +1842,8 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
       addCustomConnector,
       addShape,
       updateLinePoints,
-      updateWaypoint, 
+      updateWaypoint,
+      updateElbowMidpoint,
       updateNode, 
       updateMultipleNodes,
       moveNode, 

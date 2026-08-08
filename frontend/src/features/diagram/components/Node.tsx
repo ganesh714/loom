@@ -26,9 +26,10 @@ const parseCssString = (css: string) => {
 interface NodeProps {
   node: DiagramNode;
   onWaypointDragStart?: (e: React.PointerEvent, nodeId: string, index: number) => void;
+  onMiddleSegmentDragStart?: (e: React.PointerEvent, nodeId: string, axis: 'x' | 'y') => void;
 }
 
-export function Node({ node, onWaypointDragStart }: NodeProps) {
+export function Node({ node, onWaypointDragStart, onMiddleSegmentDragStart }: NodeProps) {
   const { 
     selectedNodeIds, 
     selectNode, 
@@ -1036,6 +1037,38 @@ export function Node({ node, onWaypointDragStart }: NodeProps) {
                       }}
                     />
                   ))}
+                  
+                  {/* Middle segment drag handle */}
+                  {isSelected && onMiddleSegmentDragStart && !isPerpendicular && (() => {
+                    const currentWps = node.waypoints || generatedWaypoints;
+                    if (currentWps.length !== 2) return null;
+                    
+                    const handleX = (currentWps[0].x + currentWps[1].x) / 2 - node.position.x;
+                    const handleY = (currentWps[0].y + currentWps[1].y) / 2 - node.position.y;
+                    const axis = isVerticalElbow ? 'y' : 'x';
+                    const cursor = isVerticalElbow ? 'ns-resize' : 'ew-resize';
+                    const width = isVerticalElbow ? 24 : 8;
+                    const height = isVerticalElbow ? 8 : 24;
+                    
+                    return (
+                      <rect
+                        x={handleX - width / 2}
+                        y={handleY - height / 2}
+                        width={width}
+                        height={height}
+                        rx={4}
+                        fill="#0c8ce9"
+                        opacity={0.8}
+                        style={{ cursor, pointerEvents: 'all' }}
+                        onPointerDown={(e) => {
+                          if (e.button === 2) return;
+                          e.stopPropagation();
+                          onMiddleSegmentDragStart(e, node.id, axis);
+                        }}
+                        onMouseDown={(e) => e.stopPropagation()}
+                      />
+                    );
+                  })()}
                 </g>
               );
             })() : node.lineCurve === 'curved' ? (() => {
