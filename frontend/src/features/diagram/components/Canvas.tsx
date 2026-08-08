@@ -1245,7 +1245,7 @@ export function Canvas() {
                     updateElbowMidpoint(nodeId, axis === 'x' ? currentX : currentY, axis);
                   };
                   
-                  const handleMouseUp = (upEvent: MouseEvent) => {
+                  const handleMouseUp = () => {
                     document.removeEventListener('mousemove', handleMouseMove);
                     document.removeEventListener('mouseup', handleMouseUp);
                     setDraggingWaypoint(null);
