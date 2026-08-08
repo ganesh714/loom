@@ -213,9 +213,25 @@ public class AIAgentPrompts {
                         "    * API/Gateway/Interface nodes -> use type 'rounded-rect'\n" +
                         "    * Generic process/action nodes -> use type 'box'\n" +
                         "    DO NOT default everything to 'box'. Use visually distinct shapes to make diagrams informative and engaging.\n" +
-                        "  - content MUST be non-empty (the visible label text)\n" +
+                        "  - MULTI-LINE CONTENT: If a node's label is long, DO NOT make the node excessively wide. Instead, insert `\\n` to break the text into 2 or more lines (e.g. 'API Gateway\\nin Auth Service') for a beautiful, compact appearance.\n"
+                        +
                         "  - x, y are the top-left pixel position calculated from row/col\n" +
-                        "  - DIMENSIONS: Default is width=160, height=60. BUT for 'pill' use width=130, height=50\n\n"
+                        "=== DEFAULT NODE SIZES (MATCH ARC WEB APP EXACTLY) ===\n" +
+                        "Use these exact sizes to keep diagrams consistent with the Arc canvas:\n" +
+                        "  - box:           width=130, height=40 (add +15 height per extra \\n line)\n" +
+                        "  - rounded-rect:  width=130, height=40 (add +15 height per extra \\n line)\n" +
+                        "  - pill:          width=130, height=40\n" +
+                        "  - terminator:    width=130, height=40\n" +
+                        "  - diamond:       width=120, height=80\n" +
+                        "  - database:      width=100, height=70\n" +
+                        "  - server:        width=100, height=70\n" +
+                        "  - cloud:         width=120, height=70\n" +
+                        "  - browser:       width=120, height=80\n" +
+                        "  - component:     width=130, height=50\n" +
+                        "  - queue:         width=130, height=50\n" +
+                        "  - mobile:        width=70,  height=110\n" +
+                        "  - circle:        width=80,  height=80\n" +
+                        "  - document:      width=130, height=60\n\n"
                         +
                         "connect_nodes: { sourceId, targetId, label, lineStyle, arrowHead, routing }\n" +
                         "  - sourceId: ID of the source node (use $$NEW_N$$ for newly created nodes)\n" +
