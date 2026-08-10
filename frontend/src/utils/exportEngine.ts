@@ -195,23 +195,41 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `        </marker>\n`;
       html += `      </defs>\n`;
 
+      const startAnchor = node.startConnection?.anchor;
+      const endAnchor = node.endConnection?.anchor;
+      const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+      const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+      const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+      const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+      const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+      
       if (node.waypoints && node.waypoints.length > 0) {
         const pathData = `M ${startX} ${startY} ` + node.waypoints.map(w => `L ${w.x - node.position.x} ${w.y - node.position.y}`).join(' ') + ` L ${endX} ${endY}`;
         const startMarkerStr = effectiveArrowType === 'double' ? ` marker-start="url(#arrowhead-start-${node.id})"` : '';
         const endMarkerStr = (effectiveArrowType === 'single' || effectiveArrowType === 'double') ? ` marker-end="url(#arrowhead-end-${node.id})"` : '';
-        html += `      <path d="${pathData}" stroke="${color}" stroke-width="3" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
+        html += `      <path d="${pathData}" stroke="${color}" stroke-width="2" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
       } else if (node.routing === 'elbow') {
         const midX = (startX + endX) / 2;
-        const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
+        const isVerticalElbow = isStartVert || !startAnchor;
         const midY = (startY + endY) / 2;
-        const elbowPath = isVerticalElbow 
-          ? `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
-          : `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+        let elbowPath = '';
+        
+        if (isPerpendicular) {
+          if (isStartHoriz) {
+            elbowPath = `M ${startX} ${startY} L ${endX} ${startY} L ${endX} ${endY}`;
+          } else {
+            elbowPath = `M ${startX} ${startY} L ${startX} ${endY} L ${endX} ${endY}`;
+          }
+        } else {
+          elbowPath = isVerticalElbow 
+            ? `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`
+            : `M ${startX} ${startY} L ${midX} ${startY} L ${midX} ${endY} L ${endX} ${endY}`;
+        }
           
         const startMarkerStr = effectiveArrowType === 'double' ? ` marker-start="url(#arrowhead-start-${node.id})"` : '';
         const endMarkerStr = (effectiveArrowType === 'single' || effectiveArrowType === 'double') ? ` marker-end="url(#arrowhead-end-${node.id})"` : '';
 
-        html += `      <path d="${elbowPath}" stroke="${color}" stroke-width="3" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
+        html += `      <path d="${elbowPath}" stroke="${color}" stroke-width="2" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
       } else if (node.lineCurve === 'curved') {
         const dx = endX - startX;
         const dy = endY - startY;
@@ -227,12 +245,12 @@ export function generateExportCode(nodes: DiagramNode[]): string {
         const startMarkerStr = effectiveArrowType === 'double' ? ` marker-start="url(#arrowhead-start-${node.id})"` : '';
         const endMarkerStr = (effectiveArrowType === 'single' || effectiveArrowType === 'double') ? ` marker-end="url(#arrowhead-end-${node.id})"` : '';
 
-        html += `      <path d="M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}" stroke="${color}" stroke-width="3" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
+        html += `      <path d="M ${startX} ${startY} Q ${controlX} ${controlY} ${endX} ${endY}" stroke="${color}" stroke-width="2" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
       } else {
         const startMarkerStr = effectiveArrowType === 'double' ? ` marker-start="url(#arrowhead-start-${node.id})"` : '';
         const endMarkerStr = (effectiveArrowType === 'single' || effectiveArrowType === 'double') ? ` marker-end="url(#arrowhead-end-${node.id})"` : '';
 
-        html += `      <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${color}" stroke-width="3"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
+        html += `      <line x1="${startX}" y1="${startY}" x2="${endX}" y2="${endY}" stroke="${color}" stroke-width="2"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
       }
 
       html += `    </svg>\n`;

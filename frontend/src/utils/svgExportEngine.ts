@@ -82,12 +82,29 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
       if (node.waypoints && node.waypoints.length > 0) {
         pathData = `M ${node.startPoint.x} ${node.startPoint.y} ` + node.waypoints.map(w => `L ${w.x} ${w.y}`).join(' ') + ` L ${node.endPoint.x} ${node.endPoint.y}`;
       } else if (node.routing === 'elbow') {
+        const startAnchor = node.startConnection?.anchor;
+        const endAnchor = node.endConnection?.anchor;
+        const isStartHoriz = startAnchor === 'left' || startAnchor === 'right';
+        const isStartVert = startAnchor === 'top' || startAnchor === 'bottom';
+        const isEndHoriz = endAnchor === 'left' || endAnchor === 'right';
+        const isEndVert = endAnchor === 'top' || endAnchor === 'bottom';
+        const isPerpendicular = (isStartHoriz && isEndVert) || (isStartVert && isEndHoriz);
+        
         const midX = (node.startPoint.x + node.endPoint.x) / 2;
         const midY = (node.startPoint.y + node.endPoint.y) / 2;
-        const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
-        pathData = isVerticalElbow 
-          ? `M ${node.startPoint.x} ${node.startPoint.y} L ${node.startPoint.x} ${midY} L ${node.endPoint.x} ${midY} L ${node.endPoint.x} ${node.endPoint.y}`
-          : `M ${node.startPoint.x} ${node.startPoint.y} L ${midX} ${node.startPoint.y} L ${midX} ${node.endPoint.y} L ${node.endPoint.x} ${node.endPoint.y}`;
+        const isVerticalElbow = isStartVert || !startAnchor;
+        
+        if (isPerpendicular) {
+          if (isStartHoriz) {
+            pathData = `M ${node.startPoint.x} ${node.startPoint.y} L ${node.endPoint.x} ${node.startPoint.y} L ${node.endPoint.x} ${node.endPoint.y}`;
+          } else {
+            pathData = `M ${node.startPoint.x} ${node.startPoint.y} L ${node.startPoint.x} ${node.endPoint.y} L ${node.endPoint.x} ${node.endPoint.y}`;
+          }
+        } else {
+          pathData = isVerticalElbow 
+            ? `M ${node.startPoint.x} ${node.startPoint.y} L ${node.startPoint.x} ${midY} L ${node.endPoint.x} ${midY} L ${node.endPoint.x} ${node.endPoint.y}`
+            : `M ${node.startPoint.x} ${node.startPoint.y} L ${midX} ${node.startPoint.y} L ${midX} ${node.endPoint.y} L ${node.endPoint.x} ${node.endPoint.y}`;
+        }
       } else if (node.lineCurve === 'curved') {
         const cx1 = node.startPoint.x + (node.endPoint.x - node.startPoint.x) / 2;
         const cy1 = node.startPoint.y;
