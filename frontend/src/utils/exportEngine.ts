@@ -256,6 +256,43 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `      ${title}\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
+    } else if (['star', 'pill', 'hexagon', 'parallelogram', 'database', 'note'].includes(node.type)) {
+      const bg = node.style?.backgroundColor || '#ffffff';
+      const border = node.style?.borderColor || '#000000';
+      const color = node.style?.color || '#000000';
+      const fontSize = node.style?.fontSize || '11px';
+      
+      let innerSvg = '';
+      if (node.type === 'pill') {
+        innerSvg = `<rect x="0" y="0" width="100%" height="100%" rx="50%" fill="${bg}" stroke="${border}" stroke-width="3" />`;
+      } else if (node.type === 'star') {
+        innerSvg = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="50,5 64,36 98,36 70,57 81,91 50,70 19,91 30,57 2,36 36,36" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'hexagon') {
+        innerSvg = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="25,5 75,5 100,50 75,95 25,95 0,50" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'parallelogram') {
+        innerSvg = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="20,5 100,5 80,95 0,95" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'database') {
+        innerSvg = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M 5,20 C 5,10 95,10 95,20 L 95,80 C 95,90 5,90 5,80 Z" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+          <path d="M 5,20 C 5,30 95,30 95,20" fill="none" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+        </svg>`;
+      } else if (node.type === 'note') {
+        innerSvg = `<svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polygon points="0,0 100,0 100,85 85,100 0,100" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+          <polygon points="100,85 85,85 85,100" fill="rgba(0,0,0,0.05)" stroke="${border}" stroke-width="1" vector-effect="non-scaling-stroke" />
+        </svg>`;
+      }
+
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; transform: rotate(${node.rotation || 0}deg); z-index: 5;">\n`;
+      html += `    <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;">\n`;
+      html += `      ${innerSvg}\n`;
+      html += `    </div>\n`;
+      html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: sans-serif; pointer-events: none;">\n`;
+      html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 15px;">\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
+      html += `      </div>\n`;
+      html += `    </div>\n`;
+      html += `  </div>\n`;
     } else {
       const extendedShape = renderExtendedShape({
         node,

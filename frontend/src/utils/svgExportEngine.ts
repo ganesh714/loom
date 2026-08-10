@@ -147,6 +147,27 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
         const cx = node.position.x + node.dimensions.width / 2;
         const cy = node.position.y + node.dimensions.height / 2;
         shapeSvg = `<polygon points="${cx},${node.position.y} ${node.position.x + node.dimensions.width},${cy} ${cx},${node.position.y + node.dimensions.height} ${node.position.x},${cy}" fill="${bg}" stroke="${border}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeDash}" />`;
+      } else if (node.type === 'pill') {
+        const rx = node.dimensions.height / 2;
+        shapeSvg = `<rect x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" rx="${rx}" fill="${bg}" stroke="${border}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeDash}" />`;
+      } else if (node.type === 'triangle') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="50,3 97,97 3,97" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'star') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="50,5 64,36 98,36 70,57 81,91 50,70 19,91 30,57 2,36 36,36" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'hexagon') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="25,5 75,5 100,50 75,95 25,95 0,50" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'parallelogram') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none"><polygon points="20,5 100,5 80,95 0,95" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" /></svg>`;
+      } else if (node.type === 'database') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <path d="M 5,20 C 5,10 95,10 95,20 L 95,80 C 95,90 5,90 5,80 Z" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+          <path d="M 5,20 C 5,30 95,30 95,20" fill="none" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+        </svg>`;
+      } else if (node.type === 'note') {
+        shapeSvg = `<svg x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <polygon points="0,0 100,0 100,85 85,100 0,100" fill="${bg}" stroke="${border}" stroke-width="2" vector-effect="non-scaling-stroke" />
+          <polygon points="100,85 85,85 85,100" fill="rgba(0,0,0,0.05)" stroke="${border}" stroke-width="1" vector-effect="non-scaling-stroke" />
+        </svg>`;
       } else {
         // default rectangle/rounded-rect
         const rx = node.type === 'rounded-rect' ? 12 : 0;
