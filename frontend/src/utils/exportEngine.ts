@@ -1,6 +1,24 @@
 import type { DiagramNode } from '../types';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { renderExtendedShape } from '../features/diagram/components/ShapeRenderers';
+import { renderExtendedShape, parseMarkdown } from '../features/diagram/components/ShapeRenderers';
+import React from 'react';
+
+function generateMarkdownHtml(content: string, style: React.CSSProperties): string {
+  const parsed = parseMarkdown(content);
+  return renderToStaticMarkup(
+    React.createElement('div', { 
+      style: { 
+        ...style,
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        width: '100%', 
+        height: '100%',
+        boxSizing: 'border-box'
+      } 
+    }, parsed as React.ReactNode)
+  );
+}
 
 export function generateExportCode(nodes: DiagramNode[]): string {
   let html = `<div style="position: relative; width: 1080px; height: 600px; border: 1px solid #ccc; background-color: #ffffff;">\n`;
@@ -15,7 +33,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; z-index: 5;">\n`;
       html += `    <div style="width: 100%; height: 100%; background-color: ${bg}; border: 2px solid ${border}; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); display: flex; align-items: center; justify-content: center; box-sizing: border-box;">\n`;
       html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 16px;">\n`;
-      html += `        ${node.content || ''}\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -28,7 +46,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; z-index: 5;">\n`;
       html += `    <div style="width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${border}; background-color: ${bg}; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; box-sizing: border-box;">\n`;
       html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 8px;">\n`;
-      html += `        ${node.content || ''}\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -64,7 +82,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `    </svg>\n`;
       html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: sans-serif; pointer-events: none;">\n`;
       html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 30px 15px 15px 15px;">\n`;
-      html += `        ${node.content || ''}\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -91,7 +109,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
         const fontWeight = node.style?.fontWeight || 'normal';
         const textAlign = node.style?.textAlign || 'center';
         html += `      <div style="color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word; width: 100%; pointer-events: none;">\n`;
-        html += `        ${node.content}\n`;
+        html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily: 'sans-serif' })}\n`;
         html += `      </div>\n`;
       }
       html += `    </div>\n`;
@@ -177,7 +195,12 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `        </marker>\n`;
       html += `      </defs>\n`;
 
-      if (node.routing === 'elbow') {
+      if (node.waypoints && node.waypoints.length > 0) {
+        const pathData = `M ${startX} ${startY} ` + node.waypoints.map(w => `L ${w.x - node.position.x} ${w.y - node.position.y}`).join(' ') + ` L ${endX} ${endY}`;
+        const startMarkerStr = effectiveArrowType === 'double' ? ` marker-start="url(#arrowhead-start-${node.id})"` : '';
+        const endMarkerStr = (effectiveArrowType === 'single' || effectiveArrowType === 'double') ? ` marker-end="url(#arrowhead-end-${node.id})"` : '';
+        html += `      <path d="${pathData}" stroke="${color}" stroke-width="3" fill="none"${dashStr}${startMarkerStr}${endMarkerStr} />\n`;
+      } else if (node.routing === 'elbow') {
         const midX = (startX + endX) / 2;
         const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
         const midY = (startY + endY) / 2;
@@ -223,6 +246,16 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       }
 
       html += `  </div>\n`;
+    } else if (node.type === 'group-frame') {
+      const title = node.groupTitle || '';
+      const titleHeight = 24;
+      const colorHex = node.groupColor || '#0c8ce9';
+      
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; border: 2px dashed ${colorHex}; border-radius: 4px; z-index: 1; box-sizing: border-box;">\n`;
+      html += `    <div style="width: 100%; height: ${titleHeight}px; background-color: ${colorHex}22; border-bottom: 2px dashed ${colorHex}; display: flex; align-items: center; justify-content: center; font-family: sans-serif; font-size: 12px; font-weight: bold; color: ${colorHex}; box-sizing: border-box;">\n`;
+      html += `      ${title}\n`;
+      html += `    </div>\n`;
+      html += `  </div>\n`;
     } else {
       const extendedShape = renderExtendedShape({
         node,
@@ -259,7 +292,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
           styleStr += `background-color: #f0f0f0; border: 2px solid #333; border-radius: 4px; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; font-family: sans-serif; `;
         }
         
-        html += `  <div style="${styleStr.trim()}">\n    ${node.content || ''}\n  </div>\n`;
+        html += `  <div style="${styleStr.trim()}">\n    ${generateMarkdownHtml(node.content || '', { color: node.style?.color || '#000000', fontSize: node.style?.fontSize || '11px', textAlign: 'center', fontFamily: 'sans-serif' })}\n  </div>\n`;
       }
     }
   });

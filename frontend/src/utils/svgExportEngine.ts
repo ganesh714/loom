@@ -79,7 +79,16 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
       const strokeDash = getStrokeDasharray(node.lineStyle);
 
       let pathData = '';
-      if (node.lineCurve === 'curved') {
+      if (node.waypoints && node.waypoints.length > 0) {
+        pathData = `M ${node.startPoint.x} ${node.startPoint.y} ` + node.waypoints.map(w => `L ${w.x} ${w.y}`).join(' ') + ` L ${node.endPoint.x} ${node.endPoint.y}`;
+      } else if (node.routing === 'elbow') {
+        const midX = (node.startPoint.x + node.endPoint.x) / 2;
+        const midY = (node.startPoint.y + node.endPoint.y) / 2;
+        const isVerticalElbow = node.startConnection?.anchor === 'bottom' || node.startConnection?.anchor === 'top' || !node.startConnection?.anchor;
+        pathData = isVerticalElbow 
+          ? `M ${node.startPoint.x} ${node.startPoint.y} L ${node.startPoint.x} ${midY} L ${node.endPoint.x} ${midY} L ${node.endPoint.x} ${node.endPoint.y}`
+          : `M ${node.startPoint.x} ${node.startPoint.y} L ${midX} ${node.startPoint.y} L ${midX} ${node.endPoint.y} L ${node.endPoint.x} ${node.endPoint.y}`;
+      } else if (node.lineCurve === 'curved') {
         const cx1 = node.startPoint.x + (node.endPoint.x - node.startPoint.x) / 2;
         const cy1 = node.startPoint.y;
         const cx2 = node.startPoint.x + (node.endPoint.x - node.startPoint.x) / 2;
@@ -118,7 +127,17 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
 
       let shapeSvg = '';
 
-      if (node.type === 'circle') {
+      if (node.type === 'group-frame') {
+        const title = node.groupTitle || '';
+        const titleHeight = 24;
+        const colorHex = node.groupColor || '#0c8ce9';
+        shapeSvg = `<rect x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" fill="transparent" stroke="${colorHex}" stroke-width="2" stroke-dasharray="8,4" />
+                    <rect x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${titleHeight}" fill="${colorHex}22" />
+                    <text x="${node.position.x + node.dimensions.width / 2}" y="${node.position.y + 16}" font-family="${fontFamily}" font-size="12" font-weight="bold" fill="${colorHex}" text-anchor="middle">${title}</text>`;
+        
+        svgElements += `  <g>\n    ${shapeSvg}\n  </g>\n`;
+        return; // skip the rest of the node rendering for group-frame
+      } else if (node.type === 'circle') {
         const cx = node.position.x + node.dimensions.width / 2;
         const cy = node.position.y + node.dimensions.height / 2;
         const rx = node.dimensions.width / 2;
