@@ -28,12 +28,15 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const bg = node.style?.backgroundColor || '#fff3cd';
       const border = node.style?.borderColor || '#ffc107';
       const color = node.style?.color || '#000000';
-      const fontSize = node.style?.fontSize || '16px';
+      const fontSize = node.style?.fontSize || '11px';
+      const fontWeight = node.style?.fontWeight || 'normal';
+      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const textAlign = node.style?.textAlign || 'center';
       
-      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; z-index: 5;">\n`;
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; z-index: 5;">\n`;
       html += `    <div style="width: 100%; height: 100%; background-color: ${bg}; border: 2px solid ${border}; clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); display: flex; align-items: center; justify-content: center; box-sizing: border-box;">\n`;
-      html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 16px;">\n`;
-      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
+      html += `      <div style="text-align: ${textAlign}; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 16px;">\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -41,12 +44,15 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const bg = node.style?.backgroundColor || '#f1f5f9';
       const border = node.style?.borderColor || '#64748b';
       const color = node.style?.color || '#000000';
-      const fontSize = node.style?.fontSize || '16px';
+      const fontSize = node.style?.fontSize || '11px';
+      const fontWeight = node.style?.fontWeight || 'normal';
+      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const textAlign = node.style?.textAlign || 'center';
       
-      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: sans-serif; z-index: 5;">\n`;
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; z-index: 5;">\n`;
       html += `    <div style="width: 100%; height: 100%; border-radius: 50%; border: 2px solid ${border}; background-color: ${bg}; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; box-sizing: border-box;">\n`;
-      html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 8px;">\n`;
-      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
+      html += `      <div style="text-align: ${textAlign}; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 8px;">\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -54,35 +60,31 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const bg = node.style?.backgroundColor || '#f0fdf4';
       const border = node.style?.borderColor || '#16a34a';
       const color = node.style?.color || '#000000';
-      const fontSize = node.style?.fontSize || '16px';
+      const fontSize = node.style?.fontSize || '11px';
+      const fontWeight = node.style?.fontWeight || 'normal';
+      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const textAlign = node.style?.textAlign || 'center';
       
       const r = parseInt(node.style?.borderRadius || '0', 10);
       const s = Math.max(0, Math.min(25, r * 0.5));
-      
-      const p1x = 50 - s * 0.45;
-      const p1y = 3 + s * 0.90;
-      const p2x = 50 + s * 0.45;
-      const p2y = 3 + s * 0.90;
-      
-      const p3x = 97 - s * 0.45;
-      const p3y = 97 - s * 0.90;
-      const p4x = 97 - s;
-      const p4y = 97;
-      
-      const p5x = 3 + s;
-      const p5y = 97;
-      const p6x = 3 + s * 0.45;
-      const p6y = 97 - s * 0.90;
+      const p1x = 50 - s * 0.45, p1y = 3 + s * 0.90;
+      const p2x = 50 + s * 0.45, p2y = 3 + s * 0.90;
+      const p3x = 97 - s * 0.45, p3y = 97 - s * 0.90;
+      const p4x = 97 - s, p4y = 97;
+      const p5x = 3 + s, p5y = 97;
+      const p6x = 3 + s * 0.45, p6y = 97 - s * 0.90;
       
       const pathData = `M ${p1x} ${p1y} Q 50 3 ${p2x} ${p2y} L ${p3x} ${p3y} Q 97 97 ${p4x} ${p4y} L ${p5x} ${p5y} Q 3 97 ${p6x} ${p6y} Z`;
 
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; transform: rotate(${node.rotation || 0}deg); z-index: 5;">\n`;
-      html += `    <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display: block;">\n`;
-      html += `      <path d="${pathData}" fill="${bg}" stroke="${border}" stroke-width="2.5" vector-effect="non-scaling-stroke" />\n`;
-      html += `    </svg>\n`;
-      html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: sans-serif; pointer-events: none;">\n`;
-      html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 30px 15px 15px 15px;">\n`;
-      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
+      html += `    <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;">\n`;
+      html += `      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style="display: block;">\n`;
+      html += `        <path d="${pathData}" fill="${bg}" stroke="${border}" stroke-width="2.5" vector-effect="non-scaling-stroke" />\n`;
+      html += `      </svg>\n`;
+      html += `    </div>\n`;
+      html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; pointer-events: none;">\n`;
+      html += `      <div style="text-align: ${textAlign}; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 30px 15px 15px 15px;">\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -279,6 +281,9 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const border = node.style?.borderColor || '#000000';
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
+      const fontWeight = node.style?.fontWeight || 'normal';
+      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const textAlign = node.style?.textAlign || 'center';
       
       let innerSvg = '';
       if (node.type === 'pill') {
@@ -305,9 +310,9 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       html += `    <div style="width: 100%; height: 100%; position: absolute; top: 0; left: 0;">\n`;
       html += `      ${innerSvg}\n`;
       html += `    </div>\n`;
-      html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: sans-serif; pointer-events: none;">\n`;
-      html += `      <div style="text-align: center; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 15px;">\n`;
-      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight: 'normal', textAlign: 'center', fontFamily: 'sans-serif' })}\n`;
+      html += `    <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; pointer-events: none;">\n`;
+      html += `      <div style="text-align: ${textAlign}; color: ${color}; font-size: ${fontSize}; word-wrap: break-word; padding: 15px;">\n`;
+      html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
       html += `      </div>\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -335,6 +340,10 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       } else {
         let styleStr = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5; `;
         
+        const fontFamily = node.style?.fontFamily || 'sans-serif';
+        const fontWeight = node.style?.fontWeight || 'normal';
+        const textAlign = node.style?.textAlign || 'center';
+        
         if (node.style) {
           if (node.style.backgroundColor) styleStr += `background-color: ${node.style.backgroundColor}; `;
           if (node.style.borderColor) styleStr += `border: 2px solid ${node.style.borderColor}; `;
@@ -342,12 +351,12 @@ export function generateExportCode(nodes: DiagramNode[]): string {
           if (node.style.fontSize) styleStr += `font-size: ${node.style.fontSize}; `;
           styleStr += `border-radius: ${node.style.borderRadius || '4px'}; `;
           styleStr += `transform: rotate(${node.rotation || 0}deg); `;
-          styleStr += `display: flex; align-items: center; justify-content: center; font-family: sans-serif; `;
+          styleStr += `display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; `;
         } else {
           styleStr += `background-color: #f0f0f0; border: 2px solid #333; border-radius: 4px; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; font-family: sans-serif; `;
         }
         
-        html += `  <div style="${styleStr.trim()}">\n    ${generateMarkdownHtml(node.content || '', { color: node.style?.color || '#000000', fontSize: node.style?.fontSize || '11px', textAlign: 'center', fontFamily: 'sans-serif' })}\n  </div>\n`;
+        html += `  <div style="${styleStr.trim()}">\n    ${generateMarkdownHtml(node.content || '', { color: node.style?.color || '#000000', fontSize: node.style?.fontSize || '11px', fontWeight, textAlign: textAlign as any, fontFamily })}\n  </div>\n`;
       }
     }
   });
