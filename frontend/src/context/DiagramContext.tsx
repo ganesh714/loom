@@ -1267,7 +1267,19 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
 
       if (dx === 0 && dy === 0) return prev;
 
-      const movedIds = selectedNodeIds;
+      let movedIds = [...selectedNodeIds];
+      
+      // If a group-frame is being moved, make sure all its children move too
+      selectedNodeIds.forEach(id => {
+        const n = prev.find(n => n.id === id);
+        if (n?.type === 'group-frame') {
+          prev.forEach(child => {
+            if (child.groupId === id && !movedIds.includes(child.id)) {
+              movedIds.push(child.id);
+            }
+          });
+        }
+      });
       const updatedNodes = prev.map(node => {
         if (movedIds.includes(node.id)) {
           const newPos = { x: node.position.x + dx, y: node.position.y + dy };
@@ -1285,7 +1297,7 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
       });
 
       // Update lines connected to moved nodes (if the line itself isn't being moved)
-      return updatedNodes.map(node => {
+      let finalNodes = updatedNodes.map(node => {
         const isLine = node.type === 'line' || node.type === 'arrow';
         if (isLine && !movedIds.includes(node.id)) {
           let needsUpdate = false;
@@ -1316,6 +1328,46 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
         }
         return node;
       });
+
+      // Auto-join/leave groups on drop
+      const hasGroupFrameMoved = selectedNodeIds.some(id => prev.find(n => n.id === id)?.type === 'group-frame');
+      if (!hasGroupFrameMoved) {
+        const groupFrames = finalNodes.filter(n => n.type === 'group-frame');
+        finalNodes = finalNodes.map(node => {
+          if (movedIds.includes(node.id) && node.type !== 'group-frame' && !['arrow', 'line'].includes(node.type)) {
+            let newGroupId = node.groupId;
+            let foundGroup = false;
+            
+            const centerX = node.position.x + (node.dimensions?.width || 0) / 2;
+            const centerY = node.position.y + (node.dimensions?.height || 0) / 2;
+
+            for (let i = groupFrames.length - 1; i >= 0; i--) {
+              const frame = groupFrames[i];
+              if (
+                centerX >= frame.position.x && 
+                centerX <= frame.position.x + frame.dimensions.width &&
+                centerY >= frame.position.y && 
+                centerY <= frame.position.y + frame.dimensions.height
+              ) {
+                newGroupId = frame.id;
+                foundGroup = true;
+                break;
+              }
+            }
+            
+            if (!foundGroup) {
+              newGroupId = undefined;
+            }
+            
+            if (newGroupId !== node.groupId) {
+              return { ...node, groupId: newGroupId };
+            }
+          }
+          return node;
+        });
+      }
+
+      return finalNodes;
     });
   };
 
@@ -1364,25 +1416,76 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
   const groupSelected = () => {
     if (selectedNodeIds.length < 2) return;
     const newGroupId = `group-${Math.random().toString(36).substring(2, 10)}`;
+    
+    // Calculate bounding box of selected nodes
+    const selectedNodesForGroup = nodes.filter(n => selectedNodeIds.includes(n.id) && !['arrow', 'line'].includes(n.type));
+    if (selectedNodesForGroup.length === 0) return;
+
+    let minX = Infinity;
+    let minY = Infinity;
+    let maxX = -Infinity;
+    let maxY = -Infinity;
+
+    selectedNodesForGroup.forEach(child => {
+      if (!child.position || !child.dimensions) return;
+      minX = Math.min(minX, child.position.x);
+      minY = Math.min(minY, child.position.y);
+      maxX = Math.max(maxX, child.position.x + child.dimensions.width);
+      maxY = Math.max(maxY, child.position.y + child.dimensions.height);
+    });
+
+    const padding = 40;
+    const topPadding = 60;
+    
+    const groupFrameNode: DiagramNode = {
+      id: newGroupId,
+      type: 'group-frame',
+      position: { x: minX - padding, y: minY - topPadding },
+      dimensions: { 
+        width: (maxX - minX) + (padding * 2), 
+        height: (maxY - minY) + topPadding + padding 
+      },
+      content: 'Group',
+      groupTitle: 'Group',
+      style: { backgroundColor: 'transparent' }
+    };
+
     saveHistoryState(nodes);
-    setNodes(prev => prev.map(node => {
-      if (selectedNodeIds.includes(node.id)) {
-        return { ...node, groupId: newGroupId };
-      }
-      return node;
-    }));
+    setNodes(prev => [
+      groupFrameNode,
+      ...prev.map(node => {
+        if (selectedNodeIds.includes(node.id)) {
+          return { ...node, groupId: newGroupId };
+        }
+        return node;
+      })
+    ]);
   };
 
   const ungroupSelected = () => {
     if (selectedNodeIds.length === 0) return;
-    saveHistoryState(nodes);
-    setNodes(prev => prev.map(node => {
-      if (selectedNodeIds.includes(node.id)) {
-        const { groupId, ...rest } = node;
-        return rest as DiagramNode;
+    
+    // Find groups involved
+    const groupsToRemove = new Set<string>();
+    nodes.forEach(n => {
+      if (selectedNodeIds.includes(n.id) && n.groupId) {
+        groupsToRemove.add(n.groupId);
       }
-      return node;
-    }));
+    });
+
+    if (groupsToRemove.size === 0) return;
+
+    saveHistoryState(nodes);
+    setNodes(prev => prev
+      .filter(n => !groupsToRemove.has(n.id)) // Remove the group frames
+      .map(node => {
+        if (node.groupId && groupsToRemove.has(node.groupId)) {
+          const { groupId, ...rest } = node;
+          return rest as DiagramNode;
+        }
+        return node;
+      })
+    );
   };
 
   const bringToFront = (ids: string[]) => {

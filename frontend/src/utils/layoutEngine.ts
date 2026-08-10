@@ -44,7 +44,7 @@ export function autoLayoutNodes(nodes: DiagramNode[]): DiagramNode[] {
 
   const isEdge = (n: DiagramNode) => ['arrow', 'line', 'custom-connector'].includes(n.type);
 
-  const realNodes = nodes.filter(n => !isEdge(n));
+  const realNodes = nodes.filter(n => !isEdge(n) && n.type !== 'group-frame');
   const edges = nodes.filter(n => isEdge(n));
 
   realNodes.forEach(node => {

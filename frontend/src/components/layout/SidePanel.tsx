@@ -818,7 +818,33 @@ export function SidePanel() {
       <AlignmentToolbar />
 
       <div className={styles.propertiesContent}>
-        {!isLine && node.type !== 'custom-block' && (
+        {node.type === 'group-frame' && (
+          <div className={styles.section}>
+            <span className={styles.sectionTitle}>Group Properties</span>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Group Title</span>
+              <input
+                type="text"
+                className={styles.input}
+                style={{ flex: 1, padding: '4px', fontSize: '11px', backgroundColor: 'var(--bg-panel)', border: '1px solid var(--border-default)', color: 'var(--text-primary)' }}
+                value={node.groupTitle || ''}
+                onChange={(e) => updateNode({ ...node, groupTitle: e.target.value, content: e.target.value })}
+                placeholder="Group Name"
+              />
+            </div>
+            <div className={styles.row}>
+              <span className={styles.rowLabel}>Border Color</span>
+              <input
+                type="color"
+                className={styles.colorPicker}
+                value={node.groupColor || '#0c8ce9'}
+                onChange={(e) => updateNode({ ...node, groupColor: e.target.value })}
+              />
+            </div>
+          </div>
+        )}
+
+        {!isLine && node.type !== 'custom-block' && node.type !== 'group-frame' && (
           <div className={styles.section}>
             <span className={styles.sectionTitle}>Shape Properties</span>
             <div className={styles.row}>

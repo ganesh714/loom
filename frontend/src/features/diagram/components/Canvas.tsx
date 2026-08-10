@@ -1125,7 +1125,7 @@ export function Canvas() {
           pointerEvents: 'none'
         }}>
           <div id="arc-export-area" className={getCursorClass()} style={{ pointerEvents: 'auto', width: '100%', height: '100%', position: 'relative' }}>
-            {nodes.map((node) => (
+            {[...nodes].sort((a, b) => (a.type === 'group-frame' ? -1 : b.type === 'group-frame' ? 1 : 0)).map((node) => (
               <Node 
                 key={node.id} 
                 node={node} 

@@ -84,14 +84,30 @@ function parseFlowchart(code: string): DiagramNode[] | null {
     if (line.startsWith('graph ') || line.startsWith('flowchart ')) continue;
 
     if (line.startsWith('subgraph ')) {
-      const match = line.match(/^subgraph\s+([a-zA-Z0-9_-]+)(?:\s*\[(.*?)\])?/);
-      if (match) {
-        currentGroup = match[1];
-        const groupLabel = match[2] || match[1];
+      let groupId = `group_${generateId()}`;
+      let groupLabel = 'Group';
+      
+      const quotedMatch = line.match(/^subgraph\s+"([^"]+)"/);
+      const bracketMatch = line.match(/^subgraph\s+([a-zA-Z0-9_-]+)\s*\[(.*?)\]/);
+      const simpleMatch = line.match(/^subgraph\s+([a-zA-Z0-9_-]+)/);
+
+      if (quotedMatch) {
+        groupId = quotedMatch[1].replace(/[^a-zA-Z0-9_-]/g, '_');
+        groupLabel = quotedMatch[1];
+      } else if (bracketMatch) {
+        groupId = bracketMatch[1];
+        groupLabel = bracketMatch[2].replace(/^["'](.*)["']$/, '$1'); // strip quotes if any
+      } else if (simpleMatch) {
+        groupId = simpleMatch[1];
+        groupLabel = simpleMatch[1];
+      }
+      
+      currentGroup = groupId;
+      if (!nodes.has(currentGroup)) {
         nodes.set(currentGroup, {
           id: currentGroup, type: 'group-frame',
           position: { x: 0, y: 0 }, dimensions: { width: 300, height: 300 },
-          content: groupLabel, style: { backgroundColor: 'transparent' }
+          content: groupLabel, groupTitle: groupLabel, style: { backgroundColor: 'transparent' }
         });
         groups.set(currentGroup, []);
       }
@@ -649,7 +665,40 @@ function layoutResult(nodes: Map<string, DiagramNode>, edges: DiagramNode[]): Di
   if (allNodes.length === 0) return null;
 
   try {
-    return autoLayoutNodes(allNodes);
+    const layoutedNodes = autoLayoutNodes(allNodes);
+    
+    // Post-pass: Compute group-frame bounding boxes
+    const groupFrames = layoutedNodes.filter(n => n.type === 'group-frame');
+    for (const group of groupFrames) {
+      const children = layoutedNodes.filter(n => n.groupId === group.id);
+      if (children.length === 0) continue;
+
+      let minX = Infinity;
+      let minY = Infinity;
+      let maxX = -Infinity;
+      let maxY = -Infinity;
+
+      for (const child of children) {
+        if (!child.position || !child.dimensions) continue;
+        minX = Math.min(minX, child.position.x);
+        minY = Math.min(minY, child.position.y);
+        maxX = Math.max(maxX, child.position.x + child.dimensions.width);
+        maxY = Math.max(maxY, child.position.y + child.dimensions.height);
+      }
+
+      if (minX !== Infinity) {
+        const padding = 40;
+        const topPadding = 60; // Extra room for the group title
+        
+        group.position = { x: minX - padding, y: minY - topPadding };
+        group.dimensions = { 
+          width: (maxX - minX) + (padding * 2), 
+          height: (maxY - minY) + topPadding + padding 
+        };
+      }
+    }
+
+    return layoutedNodes;
   } catch (e) {
     console.error('Layout engine failed on mermaid parse', e);
     return allNodes;
