@@ -1744,8 +1744,8 @@ export function Canvas() {
 
             <div className={styles.divider} style={{ height: '12px' }} />
 
-            {/* Group / Ungroup (Single Node in Group) */}
-            {selectedNode.groupId && (
+            {/* Group / Ungroup (Single Node in Group or Group Frame) */}
+            {(selectedNode.groupId || selectedNode.type === 'group-frame') && (
               <>
                 <button 
                   className={styles.contextBtn} 
@@ -1793,7 +1793,9 @@ export function Canvas() {
         const selectedNodes = nodes.filter(n => selectedNodeIds.includes(n.id));
         if (selectedNodes.length === 0) return null;
         
-        const allGrouped = selectedNodes.every(n => n.groupId) && new Set(selectedNodes.map(n => n.groupId)).size === 1;
+        const allInSameGroup = selectedNodes.every(n => n.groupId) && new Set(selectedNodes.map(n => n.groupId)).size === 1;
+        const anyGroupFrames = selectedNodes.some(n => n.type === 'group-frame');
+        const canUngroup = allInSameGroup || anyGroupFrames;
 
         return (
           <div className={styles.contextMenu}>
@@ -1836,7 +1838,7 @@ export function Canvas() {
             <div className={styles.divider} style={{ height: '12px' }} />
 
             {/* Grouping */}
-            {allGrouped ? (
+            {canUngroup ? (
               <button className={styles.contextBtn} onClick={ungroupSelected} title="Ungroup">
                 <Unlink size={11} />
               </button>

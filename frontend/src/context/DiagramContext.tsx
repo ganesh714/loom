@@ -1468,8 +1468,13 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
     // Find groups involved
     const groupsToRemove = new Set<string>();
     nodes.forEach(n => {
+      // If the node itself is in a group, we want to remove that group
       if (selectedNodeIds.includes(n.id) && n.groupId) {
         groupsToRemove.add(n.groupId);
+      }
+      // If the node IS a group frame, we want to remove it
+      if (selectedNodeIds.includes(n.id) && n.type === 'group-frame') {
+        groupsToRemove.add(n.id);
       }
     });
 
