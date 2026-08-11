@@ -49,7 +49,9 @@ function generateMarkdownHtml(content: string, style: React.CSSProperties): stri
     React.createElement('div', { 
       style: { 
         ...style,
-        display: 'block', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
         width: '100%', 
         height: '100%',
         boxSizing: 'border-box'
@@ -153,17 +155,16 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
         svgElements += `  <g>\n    ${shapeSvg}\n  </g>\n`;
         return; // skip the rest of the node rendering for group-frame
       } else if (node.type === 'text') {
+        // Text node: no shape, just text
         if (node.content) {
-          const alignItems = textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center';
           const htmlContent = generateMarkdownHtml(node.content, {
             color, fontSize, fontFamily, fontWeight, textAlign: textAlign as any,
+            padding: '4px 8px'
           });
           svgElements += `  <g transform="rotate(${node.rotation || 0} ${node.position.x + node.dimensions.width/2} ${node.position.y + node.dimensions.height/2})">\n`;
           svgElements += `    <foreignObject x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}">\n`;
-          svgElements += `      <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; display: flex; flex-direction: column; align-items: ${alignItems}; justify-content: center; box-sizing: border-box; padding: 4px 8px;">\n`;
-          svgElements += `        <div style="width: 100%; color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word;">\n`;
-          svgElements += `          ${htmlContent}\n`;
-          svgElements += `        </div>\n`;
+          svgElements += `      <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; display: flex; align-items: center; box-sizing: border-box;">\n`;
+          svgElements += `        ${htmlContent}\n`;
           svgElements += `      </div>\n`;
           svgElements += `    </foreignObject>\n`;
           svgElements += `  </g>\n`;
