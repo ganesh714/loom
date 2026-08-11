@@ -5,7 +5,7 @@ import { getSemanticStyle } from '../../../utils/semanticStyles';
 export function parseMarkdown(text: string): React.ReactNode {
   if (!text) return '';
   
-  const regex = /(\*\*.*?\*\*|\*.*?\*|`.*?`|_.*?_)/g;
+  const regex = /(\*\*.+?\*\*|\*.+?\*|`.+?`|_.+?_)/g;
   const parts = text.split(regex);
   
   return parts.reduce<React.ReactNode[]>((acc, part, index) => {
