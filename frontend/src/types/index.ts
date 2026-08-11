@@ -71,7 +71,7 @@ export type NodeType =
   // Architecture / Infrastructure
   'cylinder' | 'cloud' | 'queue' | 'browser' | 'mobile' | 'server' |
   // Layout / Annotation
-  'group-frame' | 'callout' | 'badge' |
+  'group-frame' | 'callout' | 'badge' | 'text' |
   // Power-user escape hatches
   'custom-block' | 'custom-connector';
 

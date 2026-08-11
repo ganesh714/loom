@@ -370,6 +370,18 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
            <div style={{ alignSelf: 'center', width: '40%', height: '3px', backgroundColor: borderColor, borderRadius: '4px', marginTop: '4px' }} />
         </div>
       );
+    case 'text':
+      return (
+        <div style={{
+          width: '100%', height: '100%',
+          backgroundColor: 'transparent', border: 'none',
+          display: 'flex', alignItems: mergedTextStyle.textAlign === 'left' ? 'flex-start' : mergedTextStyle.textAlign === 'right' ? 'flex-end' : 'center', justifyContent: 'center',
+          boxSizing: 'border-box', padding: '4px 8px',
+          flexDirection: 'column'
+        }}>
+          <div style={{ ...mergedTextStyle, width: '100%' }}>{content}</div>
+        </div>
+      );
     default:
       return null;
   }

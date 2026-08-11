@@ -154,6 +154,22 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
         
         svgElements += `  <g>\n    ${shapeSvg}\n  </g>\n`;
         return; // skip the rest of the node rendering for group-frame
+      } else if (node.type === 'text') {
+        // Text node: no shape, just text
+        if (node.content) {
+          const htmlContent = generateMarkdownHtml(node.content, {
+            color, fontSize, fontFamily, fontWeight, textAlign: textAlign as any,
+            padding: '4px 8px'
+          });
+          svgElements += `  <g transform="rotate(${node.rotation || 0} ${node.position.x + node.dimensions.width/2} ${node.position.y + node.dimensions.height/2})">\n`;
+          svgElements += `    <foreignObject x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}">\n`;
+          svgElements += `      <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; display: flex; align-items: center; box-sizing: border-box;">\n`;
+          svgElements += `        ${htmlContent}\n`;
+          svgElements += `      </div>\n`;
+          svgElements += `    </foreignObject>\n`;
+          svgElements += `  </g>\n`;
+        }
+        return;
       } else if (node.type === 'circle') {
         const cx = node.position.x + node.dimensions.width / 2;
         const cy = node.position.y + node.dimensions.height / 2;

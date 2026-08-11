@@ -43,7 +43,8 @@ import {
   AlignVerticalSpaceAround,
   AlignEndVertical,
   Layers,
-  Scissors
+  Scissors,
+  Type
 } from 'lucide-react';
 
 export function Canvas() {
@@ -342,8 +343,7 @@ export function Canvas() {
         setActiveTool('box');
         setCurrentShapeType('box');
       } else if (key === 't' && !e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
-        setActiveTool('note');
-        setCurrentShapeType('note');
+        setActiveTool('text');
       } else if (key === 'l' && !e.ctrlKey && !e.metaKey && !e.altKey) {
         if (e.shiftKey) {
           setActiveTool('arrow');
@@ -555,6 +555,28 @@ export function Canvas() {
           content: '',
           style: {
             backgroundColor: '#ffc000'
+          }
+        };
+        saveHistoryState(nodes);
+        setNodes([...nodes, newNode]);
+        selectNode(id, false);
+        setActiveTool('select');
+        return;
+      }
+
+      if (activeTool === 'text') {
+        const id = Math.random().toString(36).substring(2, 10);
+        const newNode: any = {
+          id,
+          type: 'text',
+          position: { x: startX - 60, y: startY - 12 },
+          dimensions: { width: 120, height: 30 },
+          content: 'Text',
+          style: {
+            backgroundColor: 'transparent',
+            borderColor: 'transparent',
+            color: '#e3e3e3',
+            fontSize: '14px',
           }
         };
         saveHistoryState(nodes);
@@ -2045,6 +2067,15 @@ export function Canvas() {
         </button>
 
         <div className={styles.divider} />
+
+        {/* Text element tool */}
+        <button
+          className={`${styles.toolButton} ${activeTool === 'text' ? styles.toolButtonActive : ''}`}
+          onClick={() => setActiveTool('text')}
+          title="Text (T)"
+        >
+          <Type size={15} />
+        </button>
 
         {/* Standalone Comment tool - Theme consistent */}
         <button

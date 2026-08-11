@@ -30,6 +30,7 @@ import {
   Folder,
   Edit,
   MoreVertical,
+  Type,
 } from 'lucide-react';
 
 // ─── Shape Categories ───────────────────────────────────────────────────────
@@ -60,6 +61,7 @@ const SHAPE_CATEGORIES = [
       { type: 'io-data',        label: 'I/O Data',       icon: Box },
       { type: 'callout',        label: 'Callout',        icon: Box },
       { type: 'note',           label: 'Note',           icon: StickyNote },
+      { type: 'text',           label: 'Text',           icon: Type },
       { type: 'group-frame',    label: 'Group Frame',    icon: Layers },
     ]
   },
