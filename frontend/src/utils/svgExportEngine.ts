@@ -1,5 +1,5 @@
 import type { DiagramNode } from '../types';
-import { parseMarkdown } from '../features/diagram/components/ShapeRenderers';
+import { parseMarkdown, renderExtendedShape } from '../features/diagram/components/ShapeRenderers';
 import { renderToStaticMarkup } from 'react-dom/server';
 import React from 'react';
 
@@ -72,7 +72,7 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
   let svgElements = '';
 
   nodes.forEach(node => {
-    const isLine = node.type === 'line' || node.type === 'arrow';
+    const isLine = node.type === 'line' || node.type === 'arrow' || node.type === 'custom-connector';
     if (isLine && node.startPoint && node.endPoint) {
       const color = node.style?.borderColor || '#555555';
       const strokeWidth = node.style?.borderWidth ? parseInt(node.style.borderWidth) : 2;
@@ -202,9 +202,29 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
           <polygon points="100,85 85,85 85,100" fill="rgba(0,0,0,0.05)" stroke="${border}" stroke-width="1" vector-effect="non-scaling-stroke" />
         </svg>`;
       } else {
-        // default rectangle/rounded-rect
-        const rx = node.type === 'rounded-rect' ? 12 : 0;
-        shapeSvg = `<rect x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" rx="${rx}" fill="${bg}" stroke="${border}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeDash}" />`;
+        const extendedShape = renderExtendedShape({
+          node,
+          textStyle: {
+            color, fontSize, fontFamily, fontWeight, textAlign: textAlign as any,
+            width: '100%', wordBreak: 'break-word',
+          },
+          shadowFilter: 'none'
+        });
+
+        if (extendedShape) {
+          const innerHtml = renderToStaticMarkup(extendedShape);
+          svgElements += `  <g transform="rotate(${node.rotation || 0} ${node.position.x + node.dimensions.width/2} ${node.position.y + node.dimensions.height/2})">\n`;
+          svgElements += `    <foreignObject x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}">\n`;
+          svgElements += `      <div xmlns="http://www.w3.org/1999/xhtml" style="width: 100%; height: 100%; box-sizing: border-box;">\n`;
+          svgElements += `        ${innerHtml}\n`;
+          svgElements += `      </div>\n`;
+          svgElements += `    </foreignObject>\n`;
+          svgElements += `  </g>\n`;
+          return; // Skip the standard content rendering below since extendedShape renders its own content
+        } else {
+          // default rectangle
+          shapeSvg = `<rect x="${node.position.x}" y="${node.position.y}" width="${node.dimensions.width}" height="${node.dimensions.height}" fill="${bg}" stroke="${border}" stroke-width="${strokeWidth}" stroke-dasharray="${strokeDash}" />`;
+        }
       }
 
       svgElements += `  <g transform="rotate(${node.rotation || 0} ${node.position.x + node.dimensions.width/2} ${node.position.y + node.dimensions.height/2})">\n`;

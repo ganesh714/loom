@@ -110,8 +110,9 @@ export function generateExportCode(nodes: DiagramNode[]): string {
         const fontSize = node.style?.fontSize || '11px';
         const fontWeight = node.style?.fontWeight || 'normal';
         const textAlign = node.style?.textAlign || 'center';
+        const fontFamily = node.style?.fontFamily || 'sans-serif';
         html += `      <div style="color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word; width: 100%; pointer-events: none;">\n`;
-        html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily: 'sans-serif' })}\n`;
+        html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
         html += `      </div>\n`;
       }
       html += `    </div>\n`;
@@ -368,7 +369,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
           styleStr += `transform: rotate(${node.rotation || 0}deg); `;
           styleStr += `display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; `;
         } else {
-          styleStr += `background-color: #f0f0f0; border: 2px solid #333; border-radius: 4px; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; font-family: sans-serif; `;
+          styleStr += `background-color: #f0f0f0; border: 2px solid #333; border-radius: 4px; transform: rotate(${node.rotation || 0}deg); display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; `;
         }
         
         html += `  <div style="${styleStr.trim()}">\n    ${generateMarkdownHtml(node.content || '', { color: node.style?.color || '#000000', fontSize: node.style?.fontSize || '11px', fontWeight, textAlign: textAlign as any, fontFamily })}\n  </div>\n`;
