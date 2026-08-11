@@ -9,9 +9,7 @@ function generateMarkdownHtml(content: string, style: React.CSSProperties): stri
     React.createElement('div', { 
       style: { 
         ...style,
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
+        display: 'block', 
         width: '100%', 
         height: '100%',
         boxSizing: 'border-box'
@@ -286,8 +284,10 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const fontFamily = node.style?.fontFamily || 'sans-serif';
       const textAlign = node.style?.textAlign || 'left';
       
-      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; font-family: ${fontFamily}; z-index: 5; transform: rotate(${node.rotation || 0}deg);">\n`;
-      html += `    <div style="width: 100%; color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word; padding: 4px 8px;">\n`;
+      const alignItems = textAlign === 'left' ? 'flex-start' : textAlign === 'right' ? 'flex-end' : 'center';
+      
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; flex-direction: column; align-items: ${alignItems}; justify-content: center; font-family: ${fontFamily}; z-index: 5; transform: rotate(${node.rotation || 0}deg); box-sizing: border-box; padding: 4px 8px;">\n`;
+      html += `    <div style="width: 100%; color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word;">\n`;
       html += `      ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
