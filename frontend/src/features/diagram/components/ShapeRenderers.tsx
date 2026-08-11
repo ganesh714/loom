@@ -192,25 +192,67 @@ export function renderExtendedShape({ node, textStyle, shadowFilter }: ShapeRend
         </div>
       );
     case 'cylinder':
-    case 'server':
       return (
         <div style={{ width: '100%', height: '100%', position: 'relative', filter: shadowFilter }}>
           <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none" style={{ display: 'block' }}>
             <path d="M 5,20 L 5,80 C 5,95 95,95 95,80 L 95,20 Z" fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
             <ellipse cx="50" cy="20" rx="45" ry="15" fill={bgColor} stroke={borderColor} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-            {node.type === 'server' && (
-              <>
-                <line x1="20" y1="40" x2="80" y2="40" stroke={borderColor} strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.5" />
-                <line x1="20" y1="55" x2="80" y2="55" stroke={borderColor} strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.5" />
-                <line x1="20" y1="70" x2="80" y2="70" stroke={borderColor} strokeWidth="1" vectorEffect="non-scaling-stroke" opacity="0.5" />
-                <circle cx="25" cy="40" r="2" fill={borderColor} opacity="0.7" />
-                <circle cx="25" cy="55" r="2" fill={borderColor} opacity="0.7" />
-                <circle cx="25" cy="70" r="2" fill={borderColor} opacity="0.7" />
-              </>
-            )}
           </svg>
           <div style={{ position: 'absolute', top: '35%', left: '10%', width: '80%', height: '55%', display: 'flex', alignItems: 'center', justifyContent: 'center', pointerEvents: 'none' }}>
             <div style={{ ...mergedTextStyle, padding: '5px' }}>{content}</div>
+          </div>
+        </div>
+      );
+
+    case 'server':
+      return (
+        <div style={{
+          width: '100%', height: '100%', position: 'relative',
+          filter: shadowFilter,
+          backgroundColor: bgColor,
+          border: `1.5px solid ${borderColor}`,
+          borderRadius: '4px',
+          boxSizing: 'border-box',
+          display: 'flex',
+          flexDirection: 'column',
+          overflow: 'hidden',
+        }}>
+          {/* Server header strip */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            padding: '0 8px',
+            height: '22px',
+            minHeight: '22px',
+            borderBottom: `1.5px solid ${borderColor}`,
+            backgroundColor: `${borderColor}22`,
+            gap: '5px',
+            flexShrink: 0,
+          }}>
+            {/* Power button circle */}
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', border: `1.5px solid ${borderColor}`, opacity: 0.6, flexShrink: 0 }} />
+            {/* Vent slots */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', flexGrow: 1, padding: '0 2px' }}>
+              <div style={{ height: '1.5px', background: borderColor, opacity: 0.3, borderRadius: '1px' }} />
+              <div style={{ height: '1.5px', background: borderColor, opacity: 0.3, borderRadius: '1px' }} />
+              <div style={{ height: '1.5px', background: borderColor, opacity: 0.3, borderRadius: '1px' }} />
+            </div>
+            {/* Status LEDs */}
+            <div style={{ display: 'flex', gap: '3px', flexShrink: 0 }}>
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#22c55e', opacity: 0.9 }} />
+              <div style={{ width: '5px', height: '5px', borderRadius: '50%', backgroundColor: '#f59e0b', opacity: 0.9 }} />
+            </div>
+          </div>
+          {/* Body — text lives here */}
+          <div style={{
+            flex: 1,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '4px 8px',
+            overflow: 'hidden',
+          }}>
+            <div style={{ ...mergedTextStyle }}>{content}</div>
           </div>
         </div>
       );
