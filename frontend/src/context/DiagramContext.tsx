@@ -453,6 +453,9 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
 
   // Sync nodes state to projects array whenever nodes change
   useEffect(() => {
+    // Skip syncing during file transitions to avoid writing stale data
+    if (isFileLoading) return;
+    
     setProjects(prevProjects => 
       prevProjects.map(p => {
         if (p.id === activeProjectId) {
@@ -464,7 +467,7 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
         return p;
       })
     );
-  }, [nodes, activeProjectId, activeFileId]);
+  }, [nodes, activeProjectId, activeFileId, isFileLoading]);
 
   // Auto-save mechanism with 1000ms debounce
   const debouncedNodes = useDebounce(nodes, 1000);
@@ -497,6 +500,13 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
         if (currentNodesStr === lastSavedNodesStr.current) {
           // No changes since last save/load, skip saving
           setSaveStatus('saved');
+          return;
+        }
+
+        // Safety net: refuse to save an empty canvas if the last saved state had data.
+        // This prevents race conditions from accidentally wiping user work.
+        if (debouncedNodes.length === 0 && lastSavedNodesStr.current && lastSavedNodesStr.current !== '[]') {
+          console.warn('[Auto-save] Blocked saving empty nodes — last saved state had data. Possible race condition.');
           return;
         }
 
@@ -1719,6 +1729,16 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
     const targetFile = targetProj.files.find(f => f.id === fileId);
     if (!targetFile) return;
 
+    // CRITICAL: Set isFileLoading BEFORE changing activeFileId/nodes.
+    // This blocks auto-save from firing during the transition window,
+    // which would save stale/empty data and destroy the user's work.
+    setIsFileLoading(true);
+
+    // Snapshot current nodes as "saved" so the debounced auto-save
+    // (which may still be pending for the OLD file) won't try to save them
+    // against the NEW file ID.
+    lastSavedNodesStr.current = JSON.stringify(nodes);
+
     setActiveProjectId(projectId);
     setActiveFileId(fileId);
     setSelectedNodeIds([]);
@@ -1727,10 +1747,11 @@ export function DiagramProvider({ children }: { children: ReactNode }) {
 
     if (isGuest) {
       setNodesState(targetFile.nodes);
+      lastSavedNodesStr.current = JSON.stringify(targetFile.nodes);
+      setIsFileLoading(false);
       return;
     }
 
-    setIsFileLoading(true);
     try {
       const arcApiUrl = (import.meta.env.VITE_ARC_API_URL || 'http://localhost:8081').replace(/\/$/, '');
       const response = await fetch(`${arcApiUrl}/api/files/${fileId}`, { credentials: 'include' });
