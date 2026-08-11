@@ -260,7 +260,8 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       if (node.label) {
         const midX = (startX + endX) / 2;
         const midY = (startY + endY) / 2;
-        html += `    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); background: #ffffff; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; z-index: 10; font-family: sans-serif;">\n`;
+        const fontFamily = node.style?.fontFamily || 'sans-serif';
+        html += `    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); background: #ffffff; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; z-index: 10; font-family: ${fontFamily};">\n`;
         html += `      ${node.label}\n`;
         html += `    </div>\n`;
       }
@@ -270,9 +271,10 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const title = node.groupTitle || '';
       const titleHeight = 24;
       const colorHex = node.groupColor || '#0c8ce9';
+      const fontFamily = node.style?.fontFamily || 'sans-serif';
       
-      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; border: 2px dashed ${colorHex}; border-radius: 4px; z-index: 1; box-sizing: border-box;">\n`;
-      html += `    <div style="width: 100%; height: ${titleHeight}px; background-color: ${colorHex}22; border-bottom: 2px dashed ${colorHex}; display: flex; align-items: center; justify-content: center; font-family: sans-serif; font-size: 12px; font-weight: bold; color: ${colorHex}; box-sizing: border-box;">\n`;
+      html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; border: 2px dashed ${colorHex}; border-radius: 4px; z-index: 1; box-sizing: border-box; font-family: ${fontFamily};">\n`;
+      html += `    <div style="width: 100%; height: ${titleHeight}px; background-color: ${colorHex}22; border-bottom: 2px dashed ${colorHex}; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; font-size: 12px; font-weight: bold; color: ${colorHex}; box-sizing: border-box;">\n`;
       html += `      ${title}\n`;
       html += `    </div>\n`;
       html += `  </div>\n`;
@@ -324,6 +326,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
           fontSize: node.style?.fontSize || '11px',
           fontWeight: node.style?.fontWeight || 'normal',
           textAlign: (node.style?.textAlign as any) || 'center',
+          fontFamily: node.style?.fontFamily || 'sans-serif',
           width: '100%',
           wordBreak: 'break-word',
         },
@@ -332,7 +335,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
 
       if (extendedShape) {
         const innerHtml = renderToStaticMarkup(extendedShape);
-        let wrapperStyle = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5;`;
+        let wrapperStyle = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5; font-family: ${node.style?.fontFamily || 'sans-serif'};`;
         if (node.rotation) {
           wrapperStyle += ` transform: rotate(${node.rotation}deg);`;
         }
