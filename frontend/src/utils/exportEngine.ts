@@ -3,6 +3,13 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { renderExtendedShape, parseMarkdown } from '../features/diagram/components/ShapeRenderers';
 import React from 'react';
 
+export function resolveFontFamily(fontFamily?: string): string {
+  if (!fontFamily || fontFamily.includes('var(--sans)')) return '"Geist Variable", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+  if (fontFamily.includes('var(--mono)')) return 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace';
+  if (fontFamily.includes('var(--serif)')) return 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif';
+  return fontFamily;
+}
+
 function generateMarkdownHtml(content: string, style: React.CSSProperties): string {
   const parsed = parseMarkdown(content);
   return renderToStaticMarkup(
@@ -30,7 +37,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
       const fontWeight = node.style?.fontWeight || 'normal';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const textAlign = node.style?.textAlign || 'center';
       
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; z-index: 5;">\n`;
@@ -46,7 +53,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
       const fontWeight = node.style?.fontWeight || 'normal';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const textAlign = node.style?.textAlign || 'center';
       
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; z-index: 5;">\n`;
@@ -62,7 +69,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
       const fontWeight = node.style?.fontWeight || 'normal';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const textAlign = node.style?.textAlign || 'center';
       
       const r = parseInt(node.style?.borderRadius || '0', 10);
@@ -110,7 +117,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
         const fontSize = node.style?.fontSize || '11px';
         const fontWeight = node.style?.fontWeight || 'normal';
         const textAlign = node.style?.textAlign || 'center';
-        const fontFamily = node.style?.fontFamily || 'sans-serif';
+        const fontFamily = resolveFontFamily(node.style?.fontFamily);
         html += `      <div style="color: ${color}; font-size: ${fontSize}; font-weight: ${fontWeight}; text-align: ${textAlign}; word-wrap: break-word; width: 100%; pointer-events: none;">\n`;
         html += `        ${generateMarkdownHtml(node.content || '', { color, fontSize, fontWeight, textAlign: textAlign as any, fontFamily })}\n`;
         html += `      </div>\n`;
@@ -261,7 +268,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       if (node.label) {
         const midX = (startX + endX) / 2;
         const midY = (startY + endY) / 2;
-        const fontFamily = node.style?.fontFamily || 'sans-serif';
+        const fontFamily = resolveFontFamily(node.style?.fontFamily);
         html += `    <div style="position: absolute; left: ${midX}px; top: ${midY}px; transform: translate(-50%, -50%); background: #ffffff; padding: 2px 6px; border: 1px solid #ccc; border-radius: 4px; font-size: 12px; color: #333; z-index: 10; font-family: ${fontFamily};">\n`;
         html += `      ${node.label}\n`;
         html += `    </div>\n`;
@@ -272,7 +279,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const title = node.groupTitle || '';
       const titleHeight = 24;
       const colorHex = node.groupColor || '#0c8ce9';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; border: 2px dashed ${colorHex}; border-radius: 4px; z-index: 1; box-sizing: border-box; font-family: ${fontFamily};">\n`;
       html += `    <div style="width: 100%; height: ${titleHeight}px; background-color: ${colorHex}22; border-bottom: 2px dashed ${colorHex}; display: flex; align-items: center; justify-content: center; font-family: ${fontFamily}; font-size: 12px; font-weight: bold; color: ${colorHex}; box-sizing: border-box;">\n`;
@@ -283,7 +290,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const color = node.style?.color || '#e3e3e3';
       const fontSize = node.style?.fontSize || '14px';
       const fontWeight = node.style?.fontWeight || 'normal';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const textAlign = node.style?.textAlign || 'left';
       
       html += `  <div style="position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; display: flex; align-items: center; font-family: ${fontFamily}; z-index: 5; transform: rotate(${node.rotation || 0}deg);">\n`;
@@ -297,7 +304,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
       const fontWeight = node.style?.fontWeight || 'normal';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const textAlign = node.style?.textAlign || 'center';
       
       let innerSvg = '';
@@ -339,7 +346,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
           fontSize: node.style?.fontSize || '11px',
           fontWeight: node.style?.fontWeight || 'normal',
           textAlign: (node.style?.textAlign as any) || 'center',
-          fontFamily: node.style?.fontFamily || 'sans-serif',
+          fontFamily: resolveFontFamily(node.style?.fontFamily),
           width: '100%',
           wordBreak: 'break-word',
         },
@@ -348,7 +355,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
 
       if (extendedShape) {
         const innerHtml = renderToStaticMarkup(extendedShape);
-        let wrapperStyle = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5; font-family: ${node.style?.fontFamily || 'sans-serif'};`;
+        let wrapperStyle = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5; font-family: ${resolveFontFamily(node.style?.fontFamily)};`;
         if (node.rotation) {
           wrapperStyle += ` transform: rotate(${node.rotation}deg);`;
         }
@@ -356,7 +363,7 @@ export function generateExportCode(nodes: DiagramNode[]): string {
       } else {
         let styleStr = `position: absolute; left: ${node.position.x}px; top: ${node.position.y}px; width: ${node.dimensions.width}px; height: ${node.dimensions.height}px; box-sizing: border-box; z-index: 5; `;
         
-        const fontFamily = node.style?.fontFamily || 'sans-serif';
+        const fontFamily = resolveFontFamily(node.style?.fontFamily);
         const fontWeight = node.style?.fontWeight || 'normal';
         const textAlign = node.style?.textAlign || 'center';
         

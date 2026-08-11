@@ -1,6 +1,7 @@
 import type { DiagramNode } from '../types';
 import { parseMarkdown, renderExtendedShape } from '../features/diagram/components/ShapeRenderers';
 import { renderToStaticMarkup } from 'react-dom/server';
+import { resolveFontFamily } from './exportEngine';
 import React from 'react';
 
 function getBoundingBox(nodes: DiagramNode[]) {
@@ -138,7 +139,7 @@ export function generateSvgExport(nodes: DiagramNode[], bgColor: string = '#1e1e
       const strokeDash = getStrokeDasharray(node.style?.borderStyle);
       const color = node.style?.color || '#000000';
       const fontSize = node.style?.fontSize || '11px';
-      const fontFamily = node.style?.fontFamily || 'sans-serif';
+      const fontFamily = resolveFontFamily(node.style?.fontFamily);
       const fontWeight = node.style?.fontWeight || 'normal';
       const textAlign = node.style?.textAlign || 'center';
 
