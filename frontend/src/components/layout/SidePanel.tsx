@@ -12,6 +12,24 @@ import {
   ArrowDown
 } from 'lucide-react';
 
+function ColorInput({ value, onChange }: { value: string, onChange: (val: string) => void }) {
+  return (
+    <div className={styles.colorPickerWrapper}>
+      <input
+        type="color"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <input
+        type="text"
+        className={styles.colorHex}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </div>
+  );
+}
+
 export function SidePanel() {
   const { 
     nodes, 
@@ -53,14 +71,10 @@ export function SidePanel() {
             <div className={styles.row}>
               <span className={styles.rowLabel}>Background</span>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%' }}>
-                <div className={styles.colorPickerWrapper}>
-                  <input
-                    type="color"
-                    value={canvasBg}
-                    onChange={(e) => handleCanvasBgChange(e.target.value)}
-                  />
-                  <span className={styles.colorHex}>{canvasBg}</span>
-                </div>
+                <ColorInput
+                  value={canvasBg}
+                  onChange={handleCanvasBgChange}
+                />
                 <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', paddingTop: '4px' }}>
                   {['#1e1e1e', '#ffffff', '#f8fafc', '#111827', '#252526', '#0f172a', '#3b82f6'].map(color => (
                     <button
@@ -520,25 +534,17 @@ export function SidePanel() {
                 <span className={styles.sectionTitle}>Fill & Stroke</span>
                 <div className={styles.row}>
                   <span className={styles.rowLabel}>Fill</span>
-                  <div className={styles.colorPickerWrapper}>
-                    <input
-                      type="color"
-                      value={commonBg}
-                      onChange={(e) => handleMultipleChange('backgroundColor', e.target.value)}
-                    />
-                    <span className={styles.colorHex}>{commonBg}</span>
-                  </div>
+                  <ColorInput
+                    value={commonBg}
+                    onChange={(val) => handleMultipleChange('backgroundColor', val)}
+                  />
                 </div>
                 <div className={styles.row}>
                   <span className={styles.rowLabel}>Stroke</span>
-                  <div className={styles.colorPickerWrapper}>
-                    <input
-                      type="color"
-                      value={commonBorder}
-                      onChange={(e) => handleMultipleChange('borderColor', e.target.value)}
-                    />
-                    <span className={styles.colorHex}>{commonBorder}</span>
-                  </div>
+                  <ColorInput
+                    value={commonBorder}
+                    onChange={(val) => handleMultipleChange('borderColor', val)}
+                  />
                 </div>
               </div>
 
@@ -590,14 +596,10 @@ export function SidePanel() {
                 </div>
                 <div className={styles.row}>
                   <span className={styles.rowLabel}>Color</span>
-                  <div className={styles.colorPickerWrapper}>
-                    <input
-                      type="color"
-                      value={commonShadow.color}
-                      onChange={(e) => handleMultipleShadowChange('color', e.target.value)}
-                    />
-                    <span className={styles.colorHex}>{commonShadow.color}</span>
-                  </div>
+                  <ColorInput
+                    value={commonShadow.color}
+                    onChange={(val) => handleMultipleShadowChange('color', val)}
+                  />
                 </div>
               </div>
             </>
@@ -608,14 +610,10 @@ export function SidePanel() {
               <span className={styles.sectionTitle}>Connector</span>
               <div className={styles.row}>
                 <span className={styles.rowLabel}>Color</span>
-                <div className={styles.colorPickerWrapper}>
-                  <input
-                    type="color"
-                    value={commonBorder}
-                    onChange={(e) => handleMultipleChange('borderColor', e.target.value)}
-                  />
-                  <span className={styles.colorHex}>{commonBorder}</span>
-                </div>
+                <ColorInput
+                  value={commonBorder}
+                  onChange={(val) => handleMultipleChange('borderColor', val)}
+                />
               </div>
               <div className={styles.row}>
                 <span className={styles.rowLabel}>Route</span>
@@ -1226,14 +1224,10 @@ export function SidePanel() {
             <span className={styles.sectionTitle}>Fill</span>
             <div className={styles.row}>
               <span className={styles.rowLabel}>Color</span>
-              <div className={styles.colorPickerWrapper}>
-                <input
-                  type="color"
-                  value={node.style?.backgroundColor || '#2c2c2c'}
-                  onChange={(e) => handleChange('backgroundColor', e.target.value)}
-                />
-                <span className={styles.colorHex}>{node.style?.backgroundColor || '#2c2c2c'}</span>
-              </div>
+              <ColorInput
+                value={node.style?.backgroundColor || '#2c2c2c'}
+                onChange={(val) => handleChange('backgroundColor', val)}
+              />
             </div>
           </div>
         )}
@@ -1243,16 +1237,10 @@ export function SidePanel() {
             <span className={styles.sectionTitle}>Stroke</span>
             <div className={styles.row}>
               <span className={styles.rowLabel}>Color</span>
-              <div className={styles.colorPickerWrapper}>
-                <input
-                  type="color"
-                  value={node.style?.borderColor || (node.type === 'line' ? '#888888' : node.type === 'arrow' ? '#0c8ce9' : '#555555')}
-                  onChange={(e) => handleChange('borderColor', e.target.value)}
-                />
-                <span className={styles.colorHex}>
-                  {node.style?.borderColor || (node.type === 'line' ? '#888888' : node.type === 'arrow' ? '#0c8ce9' : '#555555')}
-                </span>
-              </div>
+              <ColorInput
+                value={node.style?.borderColor || (node.type === 'line' ? '#888888' : node.type === 'arrow' ? '#0c8ce9' : '#555555')}
+                onChange={(val) => handleChange('borderColor', val)}
+              />
             </div>
 
             {isLine && node.type !== 'custom-connector' && (
@@ -1441,14 +1429,10 @@ export function SidePanel() {
             <span className={styles.sectionTitle}>Text</span>
             <div className={styles.row}>
               <span className={styles.rowLabel}>Color</span>
-              <div className={styles.colorPickerWrapper}>
-                <input
-                  type="color"
-                  value={node.style?.color || '#e3e3e3'}
-                  onChange={(e) => handleChange('color', e.target.value)}
-                />
-                <span className={styles.colorHex}>{node.style?.color || '#e3e3e3'}</span>
-              </div>
+              <ColorInput
+                value={node.style?.color || '#e3e3e3'}
+                onChange={(val) => handleChange('color', val)}
+              />
             </div>
           </div>
         )}
@@ -1502,14 +1486,10 @@ export function SidePanel() {
             </div>
             <div className={styles.row}>
               <span className={styles.rowLabel}>Color</span>
-              <div className={styles.colorPickerWrapper}>
-                <input
-                  type="color"
-                  value={shadow.color}
-                  onChange={(e) => handleShadowChange('color', e.target.value)}
-                />
-                <span className={styles.colorHex}>{shadow.color}</span>
-              </div>
+              <ColorInput
+                value={shadow.color}
+                onChange={(val) => handleShadowChange('color', val)}
+              />
             </div>
           </div>
         )}

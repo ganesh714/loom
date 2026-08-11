@@ -240,6 +240,10 @@
   color: var(--text-primary);
   text-transform: uppercase;
   flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  width: 100%;
 }
 
 .select {
